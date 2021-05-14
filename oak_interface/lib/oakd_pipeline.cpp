@@ -142,6 +142,30 @@ void OakDPipeline::start(OakUseList& use_list,
         }
     }
 
+
+    // IMU
+    if(use_list.use_imu){
+
+        // XLinkout
+        auto xoutIMU = pipeline_.create<dai::node::XLinkOut>();
+        // imu
+        auto imu = pipeline_.create<dai::node::IMU>();
+        xoutIMU->setStreamName("imu");
+        dai::IMUSensorConsif sensorConfig;
+        sensorConfig.reportIntervalUs = 2500; // 400 Hz (el maximo por ahora)
+        sensorConfig.sensorId = dai::IMUSensorId::RAW_ACCELEROMETER;
+        imu->enableIMUSensor(sensorConfig);
+        sensorConfig.sensorId = dai::IMUSensorId::RAW_GYROSCOPE;
+        imu->enableIMUSensor(sensorConfig);
+        sensorConfig.sensorId = dai::IMUSensorId::ROTATION_VECTOR;
+        imu->enableIMUSensor(sensorConfig);
+
+        imu->setBatchReportThreshold(1);
+        imu->setMaxBatchReports(5);
+        
+        imu->out.link(xoutIMU->input);
+    }
+
     // RGB Camera
     if(use_list.use_rgb){
         // XLinkOut
