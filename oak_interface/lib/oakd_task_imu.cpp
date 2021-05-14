@@ -1,4 +1,4 @@
-#include <oak_interface/oakd_task_detections.hpp>
+#include <oak_interface/oakd_task_imu.hpp>
 
 void OakDTaskIMU::start(ros::NodeHandle& nh){
 

@@ -151,7 +151,7 @@ void OakDPipeline::start(OakUseList& use_list,
         // imu
         auto imu = pipeline_.create<dai::node::IMU>();
         xoutIMU->setStreamName("imu");
-        dai::IMUSensorConsif sensorConfig;
+        dai::IMUSensorConfig sensorConfig;
         sensorConfig.reportIntervalUs = 2500; // 400 Hz (el maximo por ahora)
         sensorConfig.sensorId = dai::IMUSensorId::RAW_ACCELEROMETER;
         imu->enableIMUSensor(sensorConfig);

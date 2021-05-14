@@ -3,14 +3,14 @@
 
 #include "oakd_task.hpp"
 
-class OakDTaskIMU : public OalDTask{
+class OakDTaskIMU : public OakDTask{
 
 public: 
     OakDTaskIMU() = default;
     ~OakDTaskIMU() = default;
 
 public:
-    void start(ros::NodeHanle& nh);
+    void start(ros::NodeHandle& nh);
     void run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
              OakQueueIndex& queue_index);
     void stop();
