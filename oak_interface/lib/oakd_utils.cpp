@@ -70,7 +70,7 @@ cv::Mat OakDUtils::getFrame(std::shared_ptr<dai::ImgFrame> frame_dai,bool deepCo
 
         case dai::ImgFrame::Type::GRAYF16:
             size = cv::Size(frame_dai->getWidth(), frame_dai->getHeight());
-            type = CV_16FC1;
+            type = CV_16SC1; // S->F
             break;
 
         case dai::ImgFrame::Type::RAW16:
@@ -83,7 +83,7 @@ cv::Mat OakDUtils::getFrame(std::shared_ptr<dai::ImgFrame> frame_dai,bool deepCo
         case dai::ImgFrame::Type::RGBF16F16F16p:
         case dai::ImgFrame::Type::BGRF16F16F16p:
             size = cv::Size(frame_dai->getWidth(), frame_dai->getHeight());
-            type = CV_16FC3;
+            type = CV_16SC3; // S->F
             break;
 
         case dai::RawImgFrame::Type::BITSTREAM:

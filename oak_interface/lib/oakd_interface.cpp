@@ -1,7 +1,7 @@
 #include <oak_interface/oakd_interface.hpp>
 
 void OakDInterface::ownSetUp(){
-    // List of information that must be publish from params
+    // List of information that must be published from params
     OakPublishList publish_list; 
     read_param(publish_list);
 
@@ -50,9 +50,10 @@ void OakDInterface::ownStop(){
     }
 }
 
+// G: This function reads params from the launch file and stores them in variables of the struct OakPublishList
 void OakDInterface::read_param(OakPublishList& publish_list){
 
-    // List of publish topics
+    // List of publishers
     if (ros::param::has("/publish_mono"))
         ros::param::get("/publish_mono", publish_list.publish_mono);
 
@@ -69,6 +70,7 @@ void OakDInterface::read_param(OakPublishList& publish_list){
         ros::param::get("/publish_detections", publish_list.publish_detections);
 }
 
+// G: This function reads params from the launch file and stores them in order to know what nodes are necessary to define the pipeline
 void OakDInterface::create_use_list(OakUseList& use_list, OakPublishList& publish_list){
 
 

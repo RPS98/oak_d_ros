@@ -33,6 +33,7 @@ struct OakQueueIndex
     int inx_rectified_right = -1;
     int inx_rgb = -1;
     int inx_detections = -1;
+    int inx_bbDepthMapping = -1; 
 };
 
 

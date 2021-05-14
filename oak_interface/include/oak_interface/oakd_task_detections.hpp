@@ -2,6 +2,8 @@
 #define OAKD_TASK_DETECTIONS
 
 #include "oakd_task.hpp"
+#include "oak_interface/BoundingBoxes.h"
+#include <chrono>
 
 class OakDTaskDetections : public OakDTask
 {
@@ -16,6 +18,24 @@ public: // OakDTask
     void stop();
 
 private:
+    static const std::vector<std::string> label_map;
+
+    std::shared_ptr<dai::ImgFrame> imgFrame;
+    std::shared_ptr<dai::ImgFrame> depth;
+    std::shared_ptr<dai::SpatialImgDetections> det;
+    std::shared_ptr<dai::SpatialLocationCalculatorConfig> boundingBoxMapping;
+
+    // ROS Messages
+    oak_interface::BoundingBox bbox;
+    oak_interface::BoundingBoxes msg;
+    // ROS Publisher
+    ros::Publisher detections_pub;
+
+    // Other necessary variables
+    std::chrono::_V2::steady_clock::time_point startTime;
+    int counter_;
+    float fps_;
+    cv::Scalar color_;
 
 };
 

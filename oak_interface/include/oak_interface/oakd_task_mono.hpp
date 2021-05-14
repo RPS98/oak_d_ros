@@ -3,6 +3,7 @@
 
 #include "oakd_task.hpp"
 
+
 class OakDTaskMono : public OakDTask
 {
 public:
