@@ -36,7 +36,7 @@ void OakDTaskRGB::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& stream
         rgb_CameraInfo.header.seq = rgb_frame->getSequenceNum();
         rgb_CameraInfo.header.stamp = ros::Time::now();
         rgb_info_pub.publish(rgb_CameraInfo);    
-    } 
+    }
 
 }
 

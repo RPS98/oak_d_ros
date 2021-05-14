@@ -198,6 +198,7 @@ void OakDPipeline::start(OakUseList& use_list,
 
     // CONNECT TO DEVICE
     dev_ = std::make_unique<dai::Device>(pipeline_);
+    dev_->startPipeline();
 
     int counter = 0;
     int queueSize = 1;
