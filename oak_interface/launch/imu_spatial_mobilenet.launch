@@ -37,7 +37,7 @@
 
     <!-- IMU -->
     <param name="publish_imu"       type="bool" value="true" />
-    
+
     <!-- Neural Network -->
     <param name="publish_detections" type="bool" value="true" />
     <param name="nnBlobPath"         type="string" value="$(find oak_interface)/resources/mobilenet-ssd_openvino_2021.2_6shave.blob" />

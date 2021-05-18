@@ -28,6 +28,9 @@ void OakDInterface::ownSetUp(){
     if(publish_list.publish_detections){
         tasks_list_.push_back(new OakDTaskDetections());
     }
+    if(publish_list.publish_imu){
+        tasks_list_.push_back(new OakDTaskIMU());
+    }
 
     oakd_pipeline.start(use_list, streams_queue_, queue_index_);
 }
@@ -68,6 +71,9 @@ void OakDInterface::read_param(OakPublishList& publish_list){
 
     if (ros::param::has("/publish_detections"))
         ros::param::get("/publish_detections", publish_list.publish_detections);
+        
+    if (ros::param::has("/publish_imu"))
+        ros::param::get("/publish_imu", publish_list.publish_imu);
 }
 
 // G: This function reads params from the launch file and stores them in order to know what nodes are necessary to define the pipeline
@@ -94,5 +100,8 @@ void OakDInterface::create_use_list(OakUseList& use_list, OakPublishList& publis
         use_list.use_depth = true;     
         use_list.use_rgb = true;
         use_list.use_detections = true; 
+    }
+    if(publish_list.publish_imu){
+        use_list.use_imu = true;
     }
 }
