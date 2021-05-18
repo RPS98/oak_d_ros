@@ -28,8 +28,10 @@ private:
     // ROS Messages
     oak_interface::BoundingBox bbox;
     oak_interface::BoundingBoxes msg;
+    sensor_msgs::Image frame_msg;
     // ROS Publisher
     ros::Publisher detections_pub;
+    ros::Publisher image_detections_pub;
 
     // Other necessary variables
     std::chrono::_V2::steady_clock::time_point startTime;

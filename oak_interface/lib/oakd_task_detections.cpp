@@ -24,6 +24,7 @@ void OakDTaskDetections::start(ros::NodeHandle& nh){
     
     // ROS Publisher
     detections_pub = nh.advertise<oak_interface::BoundingBoxes>("/detections", 1);
+    image_detections_pub = nh.advertise<sensor_msgs::Image>("/detections_images", 1);
 
     // Initialization of some atributes
     startTime = std::chrono::steady_clock::now();
@@ -122,10 +123,20 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
     std::stringstream fpsStr;
     fpsStr << std::fixed << std::setprecision(2) << fps_;
     cv::putText(frame, fpsStr.str(), cv::Point(2, imgFrame->getHeight() - 4), cv::FONT_HERSHEY_TRIPLEX, 0.4, color_);
-    cv::imshow("depth", depthFrameColor);
-    cv::imshow("preview", frame);
+    //cv::imshow("depth", depthFrameColor);
+    //cv::imshow("preview", frame);
 
-    // Publishing the info of detections in the topic 
+    // From cv::Mat to cv_bridge::CvImage 
+    std_msgs::Header header;
+    cv_bridge::CvImage frame_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, frame);
+
+    // From cv_bridge::CvImage to sensor_msgs::Image
+    frame_cv_bridge.toImageMsg(frame_msg);
+
+    // Publishing the image with detections in the topic "/detections_images"
+    image_detections_pub.publish(frame_msg);
+
+    // Publishing the info of detections in the topic "/detections"
     detections_pub.publish(msg);
     msg.bounding_boxes.clear();
 
