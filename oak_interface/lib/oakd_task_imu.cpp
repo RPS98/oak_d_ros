@@ -1,7 +1,7 @@
 #include <oak_interface/oakd_task_imu.hpp>
 
 void OakDTaskIMU::start(ros::NodeHandle& nh){
-
+    std::cout << "Starting IMU task" << std::endl;
     imu_pub = nh.advertise<sensor_msgs::Imu>("/Imu", 1);
     //Descomentar si necesitamos el tiempo
     // baseTs = steady_clock::now();
@@ -10,7 +10,7 @@ void OakDTaskIMU::start(ros::NodeHandle& nh){
 
 void OakDTaskIMU::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, OakQueueIndex& queue_index){
 
-    imu_queue = streams_queue[queue_index.inx_imu]->tryGet<dai::IMUData>();
+    imu_queue = streams_queue[queue_index.inx_imu]->get<dai::IMUData>();
     
     for(auto& imuData : imu_queue->imuDatas){
         //Descomentar si necesitamos el tiempo

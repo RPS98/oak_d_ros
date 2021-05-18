@@ -247,12 +247,17 @@ void OakDPipeline::start(OakUseList& use_list,
         streams_queue.push_back(dev_->getOutputQueue("rgb", queueSize, true));
         queue_index.inx_rgb = counter; counter++;
     }
+    if(use_list.use_imu){
+    streams_queue.push_back(dev_->getOutputQueue("imu", queueSize, true));
+    queue_index.inx_imu = counter; counter++;
+    }
 /*
     if(use_list.use_detections){
         streams_queue.push_back(dev_->getOutputQueue("detections", queueSize, true));
         queue_index.inx_detections = counter; counter++;
     }
 */
+    std::cout << "Created pipeline" << std::endl;
 }
 
 void OakDPipeline::stop(){
