@@ -1,22 +1,28 @@
 #include <oak_interface/oakd_task_detections.hpp>
+#include "ImgFrame.cpp"
 
 
 const std::vector<std::string> OakDTaskDetections::label_map = {"background",  "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",   "car",  "cat",   "chair",    "cow",
                                   "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"}; 
 
 void OakDTaskDetections::start(ros::NodeHandle& nh){
+    
+    std::cout << "Starting OakDTaskDetections" << std::endl;
+
     std::string deviceName = "oak";
     std::string camera_param_uri = "package://oak_interface/params/camera";
 
-    if (ros::param::has("/camera_name")) {
-        ros::param::get("/camera_name", deviceName);
-    }
-    if (ros::param::has("/camera_param_uri")) {
-        ros::param::get("/camera_param_uri", camera_param_uri);
-    }
+    int bad_params = 0;
+
+    bad_params += !nh.getParam("camera_name", deviceName);
+    bad_params += !nh.getParam("camera_param_uri", camera_param_uri);
+    /*
+    if (bad_params > 0)
+    {
+        throw std::runtime_error("Couldn't find one of the parameters");
+    } */
     
-    // ROS
-    // Publishers
+    // ROS Publisher
     detections_pub = nh.advertise<oak_interface::BoundingBoxes>("/detections", 1);
 
     // Initialization of some atributes
@@ -29,21 +35,24 @@ void OakDTaskDetections::start(ros::NodeHandle& nh){
 void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
                       OakQueueIndex& queue_index){
     
-    imgFrame = streams_queue[queue_index.inx_rgb]->tryGet<dai::ImgFrame>();
-    det = streams_queue[queue_index.inx_detections]->tryGet<dai::SpatialImgDetections>();
-    depth = streams_queue[queue_index.inx_depth]->tryGet<dai::ImgFrame>();
+    using namespace std::chrono;
+    std::cout << "Running OakDTaskDetections" << std::endl;
 
-    OakDUtils utils;
+    imgFrame = streams_queue[queue_index.inx_rgb]->get<dai::ImgFrame>();
+    det = streams_queue[queue_index.inx_detections]->get<dai::SpatialImgDetections>();
+    depth = streams_queue[queue_index.inx_depth]->get<dai::ImgFrame>();
+
+    //OakDUtils utils;
 
     auto dets = det->detections;
-    cv::Mat depthFrame = utils.getFrame(depth,false);
+    cv::Mat depthFrame = depth->getFrame();
     cv::Mat depthFrameColor;
     cv::normalize(depthFrame, depthFrameColor, 255, 0, cv::NORM_INF, CV_8UC1);
     cv::equalizeHist(depthFrameColor, depthFrameColor);
     cv::applyColorMap(depthFrameColor, depthFrameColor, cv::COLORMAP_HOT);
 
     if(!dets.empty()) {
-        boundingBoxMapping = streams_queue[queue_index.inx_bbDepthMapping]->tryGet<dai::SpatialLocationCalculatorConfig>();
+        boundingBoxMapping = streams_queue[queue_index.inx_bbDepthMapping]->get<dai::SpatialLocationCalculatorConfig>();
         auto roiDatas = boundingBoxMapping->getConfigData();
 
         for(auto roiData : roiDatas) {
@@ -60,15 +69,15 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
         }
     }
     counter_++;
-    auto currentTime = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(currentTime - startTime);
-    if(elapsed > std::chrono::seconds(1)) {
+    auto currentTime = steady_clock::now();
+    auto elapsed = duration_cast<duration<float>>(currentTime - startTime);
+    if(elapsed > seconds(1)) {
         fps_ = counter_ / elapsed.count();
         counter_ = 0;
         startTime = currentTime;
     }
 
-    cv::Mat frame = utils.getCvFrame(imgFrame);
+    cv::Mat frame = imgFrame->getCvFrame();
 
     for(const auto& d : dets) {
         int x1 = d.xmin * frame.cols;

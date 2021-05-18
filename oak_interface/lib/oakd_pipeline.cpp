@@ -176,7 +176,7 @@ void OakDPipeline::start(OakUseList& use_list,
             colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_1080_P);
         }
         //colorCam->setInterleaved(false); // Function getRosMsg do not support
-        colorCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::RGB);
+        colorCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::BGR);
         colorCam->setFps(rgb_camera_fps);
         // colorCam->setCamId(int64_t id);
         // colorCam->setImageOrientation(CameraImageOrientationimageOrientation);
@@ -205,6 +205,8 @@ void OakDPipeline::start(OakUseList& use_list,
     // If use detections
     if(use_list.use_detections){
 
+        colorCam->setInterleaved(false);
+
         std::string nnBlobPath = "default";
         if (ros::param::has("/nnBlobPath")) {
             ros::param::get("/nnBlobPath", nnBlobPath);
@@ -232,21 +234,24 @@ void OakDPipeline::start(OakUseList& use_list,
             spatialDetectionNetwork->passthrough.link(xoutRGB->input);
         }
 
+        spatialDetectionNetwork->out.link(nnOut->input);
+        spatialDetectionNetwork->boundingBoxMapping.link(xoutBoundingBoxDepthMapping->input);
+
         // Link depth from the StereoDepth node
         if(use_list.use_depth){
              stereo->depth.link(spatialDetectionNetwork->inputDepth);
              spatialDetectionNetwork->passthroughDepth.link(xoutDepth->input);
         }
 
-        spatialDetectionNetwork->out.link(nnOut->input);
-        spatialDetectionNetwork->boundingBoxMapping.link(xoutBoundingBoxDepthMapping->input);
+        
     }
 
     // CONNECT TO DEVICE
     dev_ = std::make_unique<dai::Device>(pipeline_);
+    dev_->startPipeline();
 
     int counter = 0;
-    int queueSize = 1;
+    int queueSize = 4;
 
     if(use_list.use_mono){
         streams_queue.push_back(dev_->getOutputQueue("left", queueSize, false));
@@ -274,6 +279,8 @@ void OakDPipeline::start(OakUseList& use_list,
         streams_queue.push_back(dev_->getOutputQueue("boundingBoxDepthMapping", queueSize, false));
         queue_index.inx_bbDepthMapping = counter; counter++; 
     }
+
+    std::cout << "Pipeline initialized correctly" << std::endl;
 }
 
 void OakDPipeline::stop(){
