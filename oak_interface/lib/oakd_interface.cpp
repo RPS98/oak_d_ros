@@ -29,6 +29,10 @@ void OakDInterface::ownSetUp(){
         tasks_list_.push_back(new OakDTaskDetections());
     }
 
+    if(publish_list.publish_stereo_neural_inference){
+        tasks_list_.push_back(new OakDTaskStereoNeuralInference());
+    }    
+
     oakd_pipeline.start(use_list, streams_queue_, queue_index_);
 }
 
@@ -68,6 +72,9 @@ void OakDInterface::read_param(OakPublishList& publish_list){
 
     if (ros::param::has("/publish_detections"))
         ros::param::get("/publish_detections", publish_list.publish_detections);
+
+    if (ros::param::has("/publish_stereo_neural_inference"))
+        ros::param::get("/publish_stereo_neural_inference", publish_list.publish_stereo_neural_inference);
 }
 
 // G: This function reads params from the launch file and stores them in order to know what nodes are necessary to define the pipeline
@@ -89,10 +96,16 @@ void OakDInterface::create_use_list(OakUseList& use_list, OakPublishList& publis
     if(publish_list.publish_rgb){
         use_list.use_rgb = true;
     }
-    if(publish_list.publish_detections){
+    // OakDTaskDetections and OakDTaskStereoNeuralInference can't be used at the same time
+    if((publish_list.publish_detections == true) && (publish_list.publish_stereo_neural_inference == false)){
         use_list.use_mono = true;
         use_list.use_depth = true;     
         use_list.use_rgb = true;
         use_list.use_detections = true; 
     }
+    if((publish_list.publish_detections == false) && (publish_list.publish_stereo_neural_inference == true)){
+        use_list.use_mono = true;
+        use_list.use_stereo_neural_inference = true; 
+    }
+
 }

@@ -4,7 +4,7 @@ void OakDPipeline::start(OakUseList& use_list,
                          std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue,
                          OakQueueIndex& queue_index){
     
-    // Delcaration of different nodes
+    // Declaration of different nodes
 
     // MonoCamera nodes
     std::shared_ptr<dai::node::MonoCamera> monoLeft = nullptr;
@@ -19,6 +19,14 @@ void OakDPipeline::start(OakUseList& use_list,
     // MobileNetSpatialDetectionNetwork node
     std::shared_ptr<dai::node::MobileNetSpatialDetectionNetwork> spatialDetectionNetwork = nullptr;
 
+    // MobilenetDetectionNetwork nodes for stereo neural inference
+    std::shared_ptr<dai::node::MobileNetDetectionNetwork> mobilenetDetectionNetwork_right = nullptr;
+    std::shared_ptr<dai::node::MobileNetDetectionNetwork> mobilenetDetectionNetwork_left = nullptr;
+
+    // ImagesManip nodes for stereo neural inference
+    std::shared_ptr<dai::node::ImageManip> imageManip_right = nullptr;
+    std::shared_ptr<dai::node::ImageManip> imageManip_left = nullptr;
+
     // XLinOut nodes
     std::shared_ptr<dai::node::XLinkOut> xoutLeft = nullptr;
     std::shared_ptr<dai::node::XLinkOut> xoutRight = nullptr;
@@ -28,6 +36,10 @@ void OakDPipeline::start(OakUseList& use_list,
     std::shared_ptr<dai::node::XLinkOut> xoutRGB = nullptr;
     std::shared_ptr<dai::node::XLinkOut> nnOut = nullptr;
     std::shared_ptr<dai::node::XLinkOut> xoutBoundingBoxDepthMapping = nullptr;
+    std::shared_ptr<dai::node::XLinkOut> nnRightOut = nullptr;
+    std::shared_ptr<dai::node::XLinkOut> nnLeftOut = nullptr;
+    std::shared_ptr<dai::node::XLinkOut> xoutManipRight = nullptr;
+    std::shared_ptr<dai::node::XLinkOut> xoutManipLeft = nullptr;
 
     // Mono Camera
     if(use_list.use_mono){
@@ -111,9 +123,7 @@ void OakDPipeline::start(OakUseList& use_list,
             monoRight->out.link(stereo->right);
             
             // Link plugins CAM -> STEREO -> XLINK
-            if(!use_list.use_detections){
-                stereo->depth.link(xoutDepth->input); // RAW16 encoded (0..65535) depth data in millimeters
-            }
+            stereo->depth.link(xoutDepth->input); // RAW16 encoded (0..65535) depth data in millimeters
             
             //stereo->disparity.link(xoutDepth->input);   // RAW8 / RAW16 encoded disparity data
             //stereo->syncedLeft.link(xoutLeft->input);  // Passthrough ImgFrame message from ‘left’ Input
@@ -175,7 +185,10 @@ void OakDPipeline::start(OakUseList& use_list,
             ROS_INFO_STREAM("Default rgb camera resolution 720");
             colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_1080_P);
         }
-        //colorCam->setInterleaved(false); // Function getRosMsg do not support
+        if(use_list.use_detections) {
+            colorCam->setInterleaved(false); // Function getRosMsg do not support
+        }
+        else{colorCam->setInterleaved(true);}
         colorCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::BGR);
         colorCam->setFps(rgb_camera_fps);
         // colorCam->setCamId(int64_t id);
@@ -204,8 +217,6 @@ void OakDPipeline::start(OakUseList& use_list,
     // Spatial Detection Network
     // If use detections
     if(use_list.use_detections){
-
-        colorCam->setInterleaved(false);
 
         std::string nnBlobPath = "default";
         if (ros::param::has("/nnBlobPath")) {
@@ -246,6 +257,64 @@ void OakDPipeline::start(OakUseList& use_list,
         
     }
 
+    if(use_list.use_stereo_neural_inference){
+
+        std::string nnBlobPath = "default";
+        if (ros::param::has("/nnBlobPath")) {
+            ros::param::get("/nnBlobPath", nnBlobPath);
+        }
+
+        // NN for the right camera
+        mobilenetDetectionNetwork_right = pipeline_.create<dai::node::MobileNetDetectionNetwork>();
+        mobilenetDetectionNetwork_right->setConfidenceThreshold(0.5f);
+        mobilenetDetectionNetwork_right->setBlobPath(nnBlobPath);
+        mobilenetDetectionNetwork_right->setNumInferenceThreads(2);
+        mobilenetDetectionNetwork_right->input.setBlocking(false);
+
+        // NN for hte left camera
+        mobilenetDetectionNetwork_left = pipeline_.create<dai::node::MobileNetDetectionNetwork>();
+        mobilenetDetectionNetwork_left->setConfidenceThreshold(0.5f);
+        mobilenetDetectionNetwork_left->setBlobPath(nnBlobPath);
+        mobilenetDetectionNetwork_left->setNumInferenceThreads(2);
+        mobilenetDetectionNetwork_left->input.setBlocking(false);
+
+        // ImageManip for the right camera image
+        imageManip_right = pipeline_.create<dai::node::ImageManip>();
+        imageManip_right->initialConfig.setResize(300, 300);
+        imageManip_right->initialConfig.setFrameType(dai::RawImgFrame::Type::BGR888p); // The NN model expects BGR input. By default ImageManip output type would be same as input (gray in this case)
+
+        // ImageManip for the left camera image
+        imageManip_left = pipeline_.create<dai::node::ImageManip>();
+        imageManip_left->initialConfig.setResize(300, 300);
+        imageManip_left->initialConfig.setFrameType(dai::RawImgFrame::Type::BGR888p); // The NN model expects BGR input. By default ImageManip output type would be same as input (gray in this case)
+
+        // Set stream names for connection with PC
+        nnRightOut = pipeline_.create<dai::node::XLinkOut>();
+        nnRightOut->setStreamName("detections_right");
+
+        nnLeftOut = pipeline_.create<dai::node::XLinkOut>();
+        nnLeftOut->setStreamName("detections_left");
+
+        xoutManipRight = pipeline_.create<dai::node::XLinkOut>();
+        xoutManipRight->setStreamName("manip_right");
+
+        xoutManipLeft = pipeline_.create<dai::node::XLinkOut>();
+        xoutManipLeft->setStreamName("manip_left");
+
+        // Connections among nodes
+        monoLeft->out.link(imageManip_left->inputImage);
+        monoRight->out.link(imageManip_right->inputImage);
+        imageManip_right->out.link(mobilenetDetectionNetwork_right->input);
+        imageManip_left->out.link(mobilenetDetectionNetwork_left->input);
+        mobilenetDetectionNetwork_right->passthrough.link(xoutManipRight->input);
+        //imageManip_right->out.link(xoutManipRight->input);
+        mobilenetDetectionNetwork_right->out.link(nnRightOut->input);
+        mobilenetDetectionNetwork_left->passthrough.link(xoutManipLeft->input);
+        mobilenetDetectionNetwork_left->out.link(nnLeftOut->input);
+        //imageManip_left->out.link(xoutManipLeft->input);
+
+    }
+
     // CONNECT TO DEVICE
     dev_ = std::make_unique<dai::Device>(pipeline_);
     dev_->startPipeline();
@@ -279,6 +348,17 @@ void OakDPipeline::start(OakUseList& use_list,
         streams_queue.push_back(dev_->getOutputQueue("boundingBoxDepthMapping", queueSize, false));
         queue_index.inx_bbDepthMapping = counter; counter++; 
     }
+    if(use_list.use_stereo_neural_inference){
+        streams_queue.push_back(dev_->getOutputQueue("detections_right", queueSize, false));
+        queue_index.inx_detections_right = counter; counter++; 
+        streams_queue.push_back(dev_->getOutputQueue("detections_left", queueSize, false));
+        queue_index.inx_detections_left = counter; counter++;
+        streams_queue.push_back(dev_->getOutputQueue("manip_right", queueSize, false));
+        queue_index.inx_imgManip_right = counter; counter++; 
+        streams_queue.push_back(dev_->getOutputQueue("manip_left", queueSize, false));
+        queue_index.inx_imgManip_left = counter; counter++;
+    }
+    
 
     std::cout << "Pipeline initialized correctly" << std::endl;
 }

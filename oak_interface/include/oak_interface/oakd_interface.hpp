@@ -9,6 +9,7 @@
 #include "oakd_task_rectified.hpp"
 #include "oakd_task_rgb.hpp"
 #include "oakd_task_detections.hpp"
+#include "oakd_task_stereo_neural_inference.hpp"
 
 class OakDInterface : public OakDProcess
 {

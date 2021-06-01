@@ -11,6 +11,7 @@ struct OakPublishList
     bool publish_rectified = false;
     bool publish_rgb = false;
     bool publish_detections = false;
+    bool publish_stereo_neural_inference = false;
 };
 
 // List of task
@@ -21,6 +22,7 @@ struct OakUseList
     bool use_rectified = false;
     bool use_rgb = false;
     bool use_detections = false;
+    bool use_stereo_neural_inference = false;
 };
 
 // List of queue index
@@ -32,8 +34,14 @@ struct OakQueueIndex
     int inx_rectified_left = -1;
     int inx_rectified_right = -1;
     int inx_rgb = -1;
+    // OakDTaskDetections
     int inx_detections = -1;
-    int inx_bbDepthMapping = -1; 
+    int inx_bbDepthMapping = -1;
+    // OakDTaskStereoNeuralInference
+    int inx_detections_right = -1;
+    int inx_detections_left = -1;
+    int inx_imgManip_right = -1;
+    int inx_imgManip_left = -1;
 };
 
 

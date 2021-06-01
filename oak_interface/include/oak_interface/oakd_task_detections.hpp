@@ -2,8 +2,6 @@
 #define OAKD_TASK_DETECTIONS
 
 #include "oakd_task.hpp"
-#include "oak_interface/BoundingBoxes.h"
-#include <chrono>
 
 class OakDTaskDetections : public OakDTask
 {
@@ -29,9 +27,11 @@ private:
     oak_interface::BoundingBox bbox;
     oak_interface::BoundingBoxes msg;
     sensor_msgs::Image frame_msg;
+    sensor_msgs::Image frame_depth_msg;
     // ROS Publisher
     ros::Publisher detections_pub;
     ros::Publisher image_detections_pub;
+    ros::Publisher depth_pub;
 
     // Other necessary variables
     std::chrono::_V2::steady_clock::time_point startTime;

@@ -1,6 +1,4 @@
 #include <oak_interface/oakd_task_detections.hpp>
-#include "ImgFrame.cpp"
-
 
 const std::vector<std::string> OakDTaskDetections::label_map = {"background",  "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",   "car",  "cat",   "chair",    "cow",
                                   "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"}; 
@@ -23,8 +21,9 @@ void OakDTaskDetections::start(ros::NodeHandle& nh){
     } */
     
     // ROS Publisher
-    detections_pub = nh.advertise<oak_interface::BoundingBoxes>("/detections", 1);
+    detections_pub = nh.advertise<oak_interface::BoundingBoxes>("/detections_spatial", 1);
     image_detections_pub = nh.advertise<sensor_msgs::Image>("/detections_images", 1);
+    depth_pub = nh.advertise<sensor_msgs::Image>("/detections_depth", 1);
 
     // Initialization of some atributes
     startTime = std::chrono::steady_clock::now();
@@ -46,7 +45,7 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
     //OakDUtils utils;
 
     auto dets = det->detections;
-    cv::Mat depthFrame = depth->getFrame();
+    cv::Mat depthFrame = OakDUtils::getFrame(depth,false); // depth->getFrame();
     cv::Mat depthFrameColor;
     cv::normalize(depthFrame, depthFrameColor, 255, 0, cv::NORM_INF, CV_8UC1);
     cv::equalizeHist(depthFrameColor, depthFrameColor);
@@ -78,7 +77,7 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
         startTime = currentTime;
     }
 
-    cv::Mat frame = imgFrame->getCvFrame();
+    cv::Mat frame = OakDUtils::getCvFrame(imgFrame); // imgFrame->getCvFrame();
 
     for(const auto& d : dets) {
         int x1 = d.xmin * frame.cols;
@@ -129,12 +128,15 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
     // From cv::Mat to cv_bridge::CvImage 
     std_msgs::Header header;
     cv_bridge::CvImage frame_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, frame);
+    cv_bridge::CvImage depth_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, depthFrameColor);
 
     // From cv_bridge::CvImage to sensor_msgs::Image
     frame_cv_bridge.toImageMsg(frame_msg);
+    depth_cv_bridge.toImageMsg(frame_depth_msg);
 
     // Publishing the image with detections in the topic "/detections_images"
     image_detections_pub.publish(frame_msg);
+    depth_pub.publish(frame_depth_msg);
 
     // Publishing the info of detections in the topic "/detections"
     detections_pub.publish(msg);
@@ -144,4 +146,6 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
 
 void OakDTaskDetections::stop(){
     detections_pub.shutdown();
+    image_detections_pub.shutdown();
+    depth_pub.shutdown();
 };
