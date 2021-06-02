@@ -36,7 +36,7 @@ void OakDTaskMono::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& strea
     left_frame = streams_queue[queue_index.inx_mono_left]->tryGet<dai::ImgFrame>();
     if(!(left_frame == nullptr)){
         // Send image
-        OakDUtils::getRosMsg(left_frame,left_image_msg);
+        OakDUtils::getRosMsg(left_frame,left_image_msg, true);
         left_pub.publish(left_image_msg);
 
         // Send info
@@ -48,7 +48,7 @@ void OakDTaskMono::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& strea
     right_frame = streams_queue[queue_index.inx_mono_right]->tryGet<dai::ImgFrame>();
     if(!(right_frame == nullptr)){
         // Send image
-        OakDUtils::getRosMsg(right_frame,right_image_msg);
+        OakDUtils::getRosMsg(right_frame,right_image_msg, true);
         right_pub.publish(right_image_msg);
 
         // Send info

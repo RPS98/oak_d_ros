@@ -25,6 +25,9 @@ private:
     // Publishers
     ros::Publisher rgb_pub;
     ros::Publisher rgb_info_pub;
+
+    // Use interleaved
+    bool interleaved = true;
 };
 
 #endif

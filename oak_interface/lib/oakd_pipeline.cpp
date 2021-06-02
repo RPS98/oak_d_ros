@@ -103,8 +103,8 @@ void OakDPipeline::start(OakUseList& use_list,
             //stereo->setExtendedDisparity(bool enable);
             stereo->setRectifyEdgeFillColor(0);
             //stereo->setRectifyMirrorFrame(bool enable);
-            //stereo->setOutputRectified(oakTasksList.use_rectified); // DEPRECATED
-            stereo->setOutputDepth(true); // DEPRECATED
+            stereo->setOutputRectified(use_list.use_rectified); // DEPRECATED
+            stereo->setOutputDepth(use_list.use_depth); // DEPRECATED
 
             // Needed to work
             monoLeft->out.link(stereo->left);

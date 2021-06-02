@@ -10,6 +10,8 @@
 
 #include <camera_info_manager/camera_info_manager.h>
 #include "sensor_msgs/Image.h"
+#include "oak_interface/BoundingBoxes.h"
+#include "oak_interface/BoundingBox.h"
 #include "sensor_msgs/Imu.h"
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>

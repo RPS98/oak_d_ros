@@ -178,6 +178,148 @@ cv::Mat OakDUtils::getCvFrame(std::shared_ptr<dai::ImgFrame> frame_dai) {
 
 
 ///// FROM DAI-BRIDGE /////
+void OakDUtils::planarToInterleaved(const std::vector<uint8_t> &srcData,
+                                         std::vector<uint8_t> &destData, int w,
+                                         int h, int numPlanes, int bpp) {
+
+  if (numPlanes == 3) {
+    // optimization (cache)
+    for (int i = 0; i < w * h; i++) {
+      uint8_t b = srcData.data()[i + w * h * 0];
+      destData[i * 3 + 0] = b;
+    }
+    for (int i = 0; i < w * h; i++) {
+      uint8_t g = srcData.data()[i + w * h * 1];
+      destData[i * 3 + 1] = g;
+    }
+    for (int i = 0; i < w * h; i++) {
+      uint8_t r = srcData.data()[i + w * h * 2];
+      destData[i * 3 + 2] = r;
+    }
+  } else {
+    std::runtime_error("If you encounter the scenario where you need this "
+                       "please create an issue on github");
+  }
+  return;
+}
+
+void OakDUtils::interleavedToPlanar(const std::vector<uint8_t> &srcData,
+                                         std::vector<uint8_t> &destData, int w,
+                                         int h, int numPlanes, int bpp) {
+  if (numPlanes == 3) {
+    // optimization (cache)
+    for (int i = 0; i < w * h; i++) {
+
+      uint8_t b = srcData[i * 3 + 0];
+      uint8_t g = srcData[i * 3 + 1];
+      uint8_t r = srcData[i * 3 + 2];
+
+      destData[i + w * h * 0] = b;
+      destData[i + w * h * 1] = g;
+      destData[i + w * h * 2] = r;
+    }
+    // for(int i = 0; i < w*h; i++) {
+    //     uint8_t g = srcData.data()[i + w*h * 1];
+    //     destData[i*3+1] = g;
+    // }
+    // for(int i = 0; i < w*h; i++) {
+    //     uint8_t r = srcData.data()[i + w*h * 2];
+    //     destData[i*3+2] = r;
+    // }
+  } else {
+    std::runtime_error("If you encounter the scenario where you need this "
+                       "please create an issue on github");
+  }
+  return;
+}
+
+void OakDUtils::getRosMsg(std::shared_ptr<dai::ImgFrame> inData,
+                         sensor_msgs::Image &outImageMsg, 
+                         bool daiInterleaved) {
+
+  if (daiInterleaved && dai::rosBridge::ImageConverter::encodingEnumMap.find(inData->getType()) == dai::rosBridge::ImageConverter::encodingEnumMap.end()){
+      if (dai::rosBridge::ImageConverter::planarEncodingEnumMap.find(inData->getType()) != dai::rosBridge::ImageConverter::planarEncodingEnumMap.end())
+        throw std::runtime_error("Encoding value found for planar dataformat but object was created with 'interleaved = true'. ");
+      else
+        throw std::runtime_error("Encoding value not found. ");
+  } 
+    
+  if (!daiInterleaved && dai::rosBridge::ImageConverter::planarEncodingEnumMap.find(inData->getType()) == dai::rosBridge::ImageConverter::planarEncodingEnumMap.end()){
+      if (dai::rosBridge::ImageConverter::encodingEnumMap.find(inData->getType()) != dai::rosBridge::ImageConverter::encodingEnumMap.end())
+        throw std::runtime_error("Encoding value found for Interleaved dataformat but object was created with 'Interleaved = false'. ");
+      else
+        throw std::runtime_error("Encoding convertion not found. ");
+  } 
+
+  auto tstamp = inData->getTimestamp();
+  int32_t sec = std::chrono::duration_cast<std::chrono::seconds>(
+                    tstamp.time_since_epoch())
+                    .count();
+  int32_t nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                     tstamp.time_since_epoch())
+                     .count() %
+                 1000000000UL;
+
+  outImageMsg.header.seq = inData->getSequenceNum();
+  outImageMsg.header.stamp = ros::Time(sec, nsec);
+  // outImageMsg.header.frame_id = _frameName;
+    
+  if (!daiInterleaved) {
+
+    std::istringstream f(dai::rosBridge::ImageConverter::planarEncodingEnumMap[inData->getType()]);
+    std::vector<std::string> encoding_info;
+    std::string s;
+
+    while (getline(f, s, '_'))
+      encoding_info.push_back(s);
+    outImageMsg.height   = inData->getHeight();
+    outImageMsg.width    = inData->getWidth();
+    // FIXME(sachin): This might be wrong for NV12. Fix it
+    outImageMsg.step     = inData->getData().size() / inData->getHeight(); 
+    outImageMsg.is_bigendian = true;
+    size_t size = inData->getData().size();
+    outImageMsg.data.resize(size);
+      if(dai::rosBridge::ImageConverter::planarEncodingEnumMap[inData->getType()] == "nv12"){
+        outImageMsg.encoding = dai::rosBridge::ImageConverter::planarEncodingEnumMap[inData->getType()];
+        outImageMsg.data = std::move(inData->getData());
+      }
+      else{
+        outImageMsg.encoding = encoding_info[2];
+        OakDUtils::planarToInterleaved(inData->getData(), outImageMsg.data, outImageMsg.width,
+                            outImageMsg.height, std::stoi(encoding_info[0]),
+                            std::stoi(encoding_info[1]));
+      }
+    } 
+    else {
+    // copying the data to ros msg
+    // outImageMsg.header       = imgHeader;
+    std::string temp_str(dai::rosBridge::ImageConverter::encodingEnumMap[inData->getType()]);
+    outImageMsg.encoding = temp_str;
+    outImageMsg.height = inData->getHeight();
+    outImageMsg.width = inData->getWidth();
+    outImageMsg.step = inData->getData().size() / inData->getHeight();
+    if (outImageMsg.encoding == "16UC1")
+      outImageMsg.is_bigendian = false;
+    else
+      outImageMsg.is_bigendian = true;
+
+    size_t size = inData->getData().size();
+    outImageMsg.data.resize(size);
+    unsigned char *imageMsgDataPtr =
+        reinterpret_cast<unsigned char *>(&outImageMsg.data[0]);
+    unsigned char *daiImgData =
+        reinterpret_cast<unsigned char *>(inData->getData().data());
+
+    // TODO(Sachin): Try using assign since it is a vector
+    // img->data.assign(packet.data->cbegin(), packet.data->cend());
+    memcpy(imageMsgDataPtr, daiImgData, size);
+  }
+  return;
+}
+
+/*
+
+///// FROM DAI-BRIDGE /////
 // Planar image to Interleaved (from dai::ImageConverter)
 void OakDUtils::planarToInterleaved(const std::vector<uint8_t> &srcData,
                          std::vector<uint8_t> &destData, int w,
@@ -206,18 +348,17 @@ void OakDUtils::planarToInterleaved(const std::vector<uint8_t> &srcData,
 
 // dai::ImgFrame to sensor_msgs::Image (from dai::ImageConverter)
 void OakDUtils::getRosMsg(std::shared_ptr<dai::ImgFrame> inData,
-                              sensor_msgs::Image &outImageMsg) {
+                              sensor_msgs::Image &outImageMsg, bool daiInterleaved) {
     
-    bool _daiInterleaved = true;
 
-    if (_daiInterleaved && dai::rosBridge::ImageConverter::encodingEnumMap.find(inData->getType()) == dai::rosBridge::ImageConverter::encodingEnumMap.end()){
+    if (daiInterleaved && dai::rosBridge::ImageConverter::encodingEnumMap.find(inData->getType()) == dai::rosBridge::ImageConverter::encodingEnumMap.end()){
         if (dai::rosBridge::ImageConverter::planarEncodingEnumMap.find(inData->getType()) != dai::rosBridge::ImageConverter::planarEncodingEnumMap.end())
             throw std::runtime_error("Encoding value found for planar dataformat but object was created with 'interleaved = true'. ");
         else
             throw std::runtime_error("Encoding value not found. ");
     } 
         
-    if (!_daiInterleaved && dai::rosBridge::ImageConverter::planarEncodingEnumMap.find(inData->getType()) == dai::rosBridge::ImageConverter::planarEncodingEnumMap.end()){
+    if (!daiInterleaved && dai::rosBridge::ImageConverter::planarEncodingEnumMap.find(inData->getType()) == dai::rosBridge::ImageConverter::planarEncodingEnumMap.end()){
         if (dai::rosBridge::ImageConverter::encodingEnumMap.find(inData->getType()) != dai::rosBridge::ImageConverter::encodingEnumMap.end())
             throw std::runtime_error("Encoding value found for Interleaved dataformat but object was created with 'Interleaved = false'. ");
         else
@@ -237,7 +378,7 @@ void OakDUtils::getRosMsg(std::shared_ptr<dai::ImgFrame> inData,
     outImageMsg.header.stamp = ros::Time(sec, nsec);
     //outImageMsg.header.frame_id = _frameName;
         
-    if (!_daiInterleaved) {
+    if (!daiInterleaved) {
 
         std::istringstream f(dai::rosBridge::ImageConverter::planarEncodingEnumMap[inData->getType()]);
         std::vector<std::string> encoding_info;
@@ -288,30 +429,4 @@ void OakDUtils::getRosMsg(std::shared_ptr<dai::ImgFrame> inData,
     }
     return;
 }
-
-
-///// OWN FUNCTIONS /////
-cv::Mat OakDUtils::imgframe_to_mat(std::shared_ptr<dai::ImgFrame> frame, int data_type=CV_16UC1){
-    return cv::Mat(
-        frame->getHeight(), 
-        frame->getWidth(), 
-        data_type, 
-        frame->getData().data()
-    );
-}
-
-sensor_msgs::Image OakDUtils::dai_to_ros(std_msgs::Header header, std::shared_ptr<dai::ImgFrame> frame){
-    sensor_msgs::Image image;
-
-    // From std::shared_ptr<dai::ImgFrame> to cv::Mat
-    //cv::Mat frame_cv = imgframe_to_mat(frame);
-    cv::Mat frame_cv = getCvFrame(frame);
-
-    // From cv::Mat to cv_bridge::CvImage 
-    cv_bridge::CvImage frame_cv_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::TYPE_16UC1, frame_cv); // "passthrough",
-
-    // From cv_bridge::CvImage to sensor_msgs::Image
-    frame_cv_bridge.toImageMsg(image);
-
-    return image;
-}
+*/

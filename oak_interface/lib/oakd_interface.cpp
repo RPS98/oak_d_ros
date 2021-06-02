@@ -69,8 +69,13 @@ void OakDInterface::read_param(OakPublishList& publish_list){
     if (ros::param::has("/publish_rgb"))
         ros::param::get("/publish_rgb", publish_list.publish_rgb);
 
-    if (ros::param::has("/publish_detections"))
+    if (ros::param::has("/publish_detections")) {
         ros::param::get("/publish_detections", publish_list.publish_detections);
+        if(publish_list.publish_detections){
+            publish_list.publish_rgb = false;
+            // Because detections do, not oak_task_rgb
+        }
+    }
         
     if (ros::param::has("/publish_imu"))
         ros::param::get("/publish_imu", publish_list.publish_imu);

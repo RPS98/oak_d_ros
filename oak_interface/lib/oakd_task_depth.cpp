@@ -29,7 +29,7 @@ void OakDTaskDepth::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& stre
 
     if(!(depth_frame == nullptr)){
         // Send image
-        OakDUtils::getRosMsg(depth_frame,depth_image_msg);
+        OakDUtils::getRosMsg(depth_frame,depth_image_msg, true);
         depth_pub.publish(depth_image_msg);
 
         // Send info
