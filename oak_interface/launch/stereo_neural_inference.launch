@@ -41,7 +41,7 @@
     <param name="nnBlobPath"         type="string" value="$(find oak_interface)/resources/mobilenet-ssd_openvino_2021.2_6shave.blob" />
 
     <!-- Cameras parameters -->
-    <param name="mono_camera_resolution" type="int"    value="720"  /> <!-- 720, 800, 400 -->
+    <param name="mono_camera_resolution" type="int"    value="800"  /> <!-- 720, 800, 400 -->
     <param name="mono_camera_fps"        type="double" value="60.0" /> <!-- Max 120-->
 
     <param name="rgb_camera_resolution" type="int"    value="1080"  /> <!-- 1080, 3840 (4K), 2826 (12MP) -->

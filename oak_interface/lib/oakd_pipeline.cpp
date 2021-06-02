@@ -115,7 +115,7 @@ void OakDPipeline::start(OakUseList& use_list,
             //stereo->setExtendedDisparity(bool enable);
             stereo->setRectifyEdgeFillColor(0);
             //stereo->setRectifyMirrorFrame(bool enable);
-            //stereo->setOutputRectified(oakTasksList.use_rectified); // DEPRECATED
+            stereo->setOutputRectified(use_list.use_rectified); // DEPRECATED
             stereo->setOutputDepth(true); // DEPRECATED
 
             // Needed to work
@@ -302,8 +302,8 @@ void OakDPipeline::start(OakUseList& use_list,
         xoutManipLeft->setStreamName("manip_left");
 
         // Connections among nodes
-        monoLeft->out.link(imageManip_left->inputImage);
-        monoRight->out.link(imageManip_right->inputImage);
+        stereo->rectifiedLeft.link(imageManip_left->inputImage);
+        stereo->rectifiedRight.link(imageManip_right->inputImage);
         imageManip_right->out.link(mobilenetDetectionNetwork_right->input);
         imageManip_left->out.link(mobilenetDetectionNetwork_left->input);
         mobilenetDetectionNetwork_right->passthrough.link(xoutManipRight->input);
@@ -357,6 +357,11 @@ void OakDPipeline::start(OakUseList& use_list,
         queue_index.inx_imgManip_right = counter; counter++; 
         streams_queue.push_back(dev_->getOutputQueue("manip_left", queueSize, false));
         queue_index.inx_imgManip_left = counter; counter++;
+        streams_queue.push_back(dev_->getOutputQueue("rectified_left", queueSize, false));
+        queue_index.inx_rectified_left = counter; counter++;
+        streams_queue.push_back(dev_->getOutputQueue("rectified_right", queueSize, false));
+        queue_index.inx_rectified_right = counter; counter++;
+        
     }
     
 

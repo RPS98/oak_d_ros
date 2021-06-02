@@ -34,6 +34,8 @@ private:
     std::shared_ptr<dai::ImgFrame> left;
     std::shared_ptr<dai::ImgDetections> det_right;
     std::shared_ptr<dai::ImgDetections> det_left;
+    std::shared_ptr<dai::ImgFrame> rectified_left;
+    std::shared_ptr<dai::ImgFrame> rectified_right;
 
     // ROS Messages
     oak_interface::BoundingBox bbox;
