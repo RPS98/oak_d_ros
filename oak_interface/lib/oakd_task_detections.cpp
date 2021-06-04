@@ -114,6 +114,8 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
         bbox.xmax = (int)x2;
         bbox.ymax = (int)y2;
         bbox.depth = (float)d.spatialCoordinates.z;
+        bbox.x_centroid = (float)d.spatialCoordinates.x;
+        bbox.y_centroid = (float)d.spatialCoordinates.y;
 
         msg.bounding_boxes.push_back(bbox);
 

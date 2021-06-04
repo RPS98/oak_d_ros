@@ -54,10 +54,6 @@ private:
     float fps_;
     cv::Scalar color_;
 
-    int cont;
-    int cont_depth_avg;
-    float depth_avg_total;
-
 };
 
 #endif
