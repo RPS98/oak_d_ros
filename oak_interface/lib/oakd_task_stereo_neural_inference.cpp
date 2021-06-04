@@ -37,6 +37,9 @@ void OakDTaskStereoNeuralInference::start(ros::NodeHandle& nh){
     counter_ = 0;
     fps_ = 0;
     color_ = cv::Scalar(255, 255, 255);
+    cont = 0;
+    cont_depth_avg = 0;
+    depth_avg_total = 0.0;
 };
 
 void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
@@ -197,17 +200,24 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
     }
 
     // Compute the depth of the detections which are in both cameras
-    float dist_threshold = 150.0;
-    float area_threshold = 500.0;
+    float dist_threshold = 20000000.0;
+    float area_threshold = 70000000.0;
 
     float focal_length = (f_right + f_left)/2; 
+    float depth, cont_depth = 0, depth_avg = 0.0;
+    int reducciones = 2;
+    float r = 0;
+    float disparity;
+    int e = 0;
+    int n_puntos;
 
     for(const auto& dR : detsRight){
         for(const auto& dL : detsLeft){
-            if(dR.type == dL.type){
+            if(dR.type == dL.type && dR.type == "bottle"){
                 float distance = sqrt(pow(dL.cx-dR.cx,2)+pow(dL.cy-dR.cy,2));
-                //std::cout<<distance<<std::endl;
-                if((distance <= dist_threshold) && (abs(dR.area-dL.area) <= area_threshold)){
+                float area = abs(dR.area-dL.area);
+                
+                if((distance <= dist_threshold) && (area <= area_threshold)){
                     bbox.Class = dR.type;
                     bbox.probability = dR.prob;
                     bbox.xmin = (int)dR.x1;
@@ -216,44 +226,74 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
                     bbox.ymax = (int)dR.y2;
 
                     // Computing the depth
-                    int disparity = (int)abs((dR.x1-CX_right/2)-(dL.x1-CX_left/2));
-                    if(disparity == 0) disparity = 1;
-                    bbox.depth = (focal_length*B)/disparity; // Stereo model
-                    std::cout<<bbox.depth<<std::endl;
+                    // int disparity = (int)abs((dR.x1-CX_right/2)-(dL.x1-CX_left/2));
+                    // if(disparity == 0) disparity = 1;
+                    // bbox.depth = (focal_length*B)/disparity; // Stereo model
+                    // std::cout<<"class: "<<dR.type<<std::endl;
+                    // std::cout<<"distance: "<<distance<<std::endl;
+                    // std::cout<<"area: "<<area<<std::endl;
+                    // std::cout<<"disparity: "<<disparity<<std::endl;
+                    // std::cout<<"depth: "<<bbox.depth/1000<<std::endl;
+                    // std::cout<<" "<<std::endl;
+                    e = 0;
+                    r = 0;
+                    cont_depth = 0;
+                    for (int i=0;i<=reducciones;i++){
+                        disparity = abs((dR.x1+r*dR.x1 - CX_right/2)-(dL.x1 + r*dL.x1 - CX_left/2));
+                        if (disparity <= 0.001) e += 1;
+                        else {
+                            depth = (focal_length*B)/disparity;
+                            cont_depth = cont_depth + depth;
+                        }
+
+
+                        disparity = abs((dR.x2 - r*dR.x2 - CX_right/2)-(dL.x2 - r*dL.x2 - CX_left/2));
+                        if (disparity <= 0.001) e += 1;
+                        else {
+                            depth = (focal_length*B)/disparity;
+                            cont_depth = cont_depth + depth;
+                        }
+                        
+                        r += 0.05;
+                    }
+
+                    // A: average of calculated depths when disparity isn't always 0
+                    if (e > 0 && cont_depth == 0) 
+                        std::cout<<"Disparidad 0 "<<std::endl;
+                    else{
+                        n_puntos = (reducciones+1)*2-e;
+                        depth_avg = cont_depth/n_puntos;
+                    }
+
+                        
+                    //cont_depth_avg = cont_depth_avg + depth_avg;
+                
+
+
+                    // int disparity3 = (int)abs((dR.x1-CX_right/2)-(dL.x1-CX_left/2));
+                    // if (disparity3 <= 0.0001 && disparity3 >= -0.0001) depth1 = 0.0000;
+                    // else depth1 = (focal_length*B)/disparity1;
+
+                    // int disparity2 = (int)abs((dR.x2-CX_right/2)-(dL.x2-CX_left/2));
+                    // if (disparity2 <= 0.01 && disparity2 >= -0.01) depth2 = 0.0000;
+                    // else depth2 = (focal_length*B)/disparity2;
+                    std::stringstream avgStr;
+
+                    /*if (cont == 10) {
+                        depth_avg_total = depth_avg/(cont+1);
+                        cont = 0;
+                        cont_depth_avg = 0;
+                    } */                    
+                    //cont = cont + 1;
+
+                    avgStr << std::fixed << std::setprecision(3) << depth_avg/10;
+                    cv::putText(frame_rectified_right, avgStr.str(), cv::Point(dR.x1 + 10, dR.y1 + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    cv::putText(frame_rectified_left, avgStr.str(), cv::Point(dL.x1 + 10, dL.y1 + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);  
+
+                    std::cout<<"depth_avg: "<< depth_avg/10 <<std::endl;
 
                     msg.bounding_boxes.push_back(bbox);
                 }
-
-                /* Se pasa la bounding box a la imagen 1280x800
-                // 1) Sacar coord de la bbox respecto al centro de la imagen
-                int x1R = dR.x1 - 150;
-                int y1R = dR.y1 - 150;
-                int x2R = dR.x2 - 150;
-                int y2R = dR.y2 - 150;
-                int width_R = dR.x2 - dR.x1;
-                int height_R = dR.y2 - dR.y1;
-
-                int x1L = dL.x1 - 150;
-                int y1L = dL.y1 - 150;
-                int x2L = dL.x2 - 150;
-                int y2L = dL.y2 - 150;
-                int width_L = dL.x2 - dL.x1;
-                int height_L = dL.y2 - dL.y1;
-
-                // 2) Pasar esos puntos a la imagen 1280 x 800
-                x1R = x1R * 800/300 + 644.2604;
-                y1R = y1R * 800/300 + 370.4150;
-                x2R = x2R * 800/300 + 644.2604;
-                y2R = y2R * 800/300 + 370.4150;
-
-                x1L = x1L * 800/300 + 641.3522;
-                y1L = y1L * 800/300 + 372.6643;
-                x2L = x2L * 800/300 + 641.3522;
-                y2L = y2L * 800/300 + 372.6643;
-
-                // 3) Dibujar bounding boxes
-                cv::rectangle(frame_rectified_right, cv::Rect(cv::Point(x1R, y1R), cv::Point(x2R, y2R)), color_, cv::FONT_HERSHEY_SIMPLEX);
-                cv::rectangle(frame_rectified_left, cv::Rect(cv::Point(x1L, y1L), cv::Point(x2L, y2L)), color_, cv::FONT_HERSHEY_SIMPLEX); */
 
             }   
         }
@@ -290,6 +330,8 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
     msg.bounding_boxes.clear();
     detsLeft.clear();
     detsRight.clear();
+
+    
     //right_detections.bounding_boxes.clear();
     //left_detections.bounding_boxes.clear();
 
