@@ -87,11 +87,11 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
         int x2 = d.xmax * frame_right.cols;
         int y2 = d.ymax * frame_right.rows;
 
-        // Bbox coordinates for the 1280x800 image
-        int x1R = (x1 - 150) * 800/300 + CX_RIGHT;
-        int y1R = (y1 - 150) * 800/300 + CY_RIGHT;
-        int x2R = (x2 - 150) * 800/300 + CX_RIGHT;
-        int y2R = (y2 - 150) * 800/300 + CY_RIGHT;
+        // Bbox lateral coordinates for the 1280x800 image
+        int x1R = (x1-150) * 800/300 + CX_RIGHT;
+        int y1R = (y1-150) * 800/300 + CY_RIGHT;
+        int x2R = (x2-150) * 800/300 + CX_RIGHT;
+        int y2R = (y2-150) * 800/300 + CY_RIGHT;
 
         int labelIndex = d.label;
         std::string labelStr = std::to_string(labelIndex);
@@ -117,13 +117,14 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
 
         dets.type = (std::string)labelStr;
         dets.prob = (float)d.confidence;
-        dets.x1 = (int)x1R;
-        dets.y1 = (int)y1R;
-        dets.x2 = (int)x2R;
-        dets.y2 = (int)y2R;
-        dets.cx = (float)(x1R + x2R)/2;
-        dets.cy = (float)(y1R + y2R)/2;
-        dets.area = abs(x2R-x1R)*abs(y2R-y1R);
+        dets.x1 = (int)(x1R - CX_RIGHT);
+        dets.y1 = (int)(y1R - CY_RIGHT);
+        dets.x2 = (int)(x2R - CX_RIGHT);
+        dets.y2 = (int)(y2R - CY_RIGHT);
+        dets.cx = (float)(dets.x1 + dets.x2)/2;
+        dets.cy = (float)(dets.y1 + dets.y2)/2;
+        dets.area = abs(dets.x2-dets.x1)*abs(dets.y2-dets.y1);
+        dets.aspect_ratio = abs((dets.y2-dets.y1)/(dets.x2-dets.x1));
 
         detsRight.push_back(dets);
 
@@ -148,10 +149,10 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
         int x2 = d.xmax * frame_left.cols;
         int y2 = d.ymax * frame_left.rows;
 
-        int x1L = (x1 - 150) * 800/300 + CX_LEFT;
-        int y1L = (y1 - 150) * 800/300 + CY_LEFT;
-        int x2L = (x2 - 150) * 800/300 + CX_LEFT;
-        int y2L = (y2 - 150) * 800/300 + CY_LEFT;
+        int x1L = (x1-150) * 800/300 + CX_LEFT;
+        int y1L = (y1-150) * 800/300 + CY_LEFT;
+        int x2L = (x2-150) * 800/300 + CX_LEFT;
+        int y2L = (y2-150) * 800/300 + CY_LEFT;
 
         int labelIndex = d.label;
         std::string labelStr = std::to_string(labelIndex);
@@ -177,13 +178,14 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
 
         dets.type = (std::string)labelStr;
         dets.prob = (float)d.confidence;
-        dets.x1 = (int)x1L;
-        dets.y1 = (int)y1L;
-        dets.x2 = (int)x2L;
-        dets.y2 = (int)y2L;
-        dets.cx = (float)((x2L + x1L)/2);
-        dets.cy = (float)((y2L + y1L)/2);
-        dets.area = abs(x2L-x1L)*abs(y2L-y1L);
+        dets.x1 = (int)x1L - CX_LEFT;
+        dets.y1 = (int)y1L - CY_LEFT;
+        dets.x2 = (int)x2L - CX_LEFT;
+        dets.y2 = (int)y2L - CY_LEFT;
+        dets.cx = (float)((dets.x2 + dets.x1)/2);
+        dets.cy = (float)((dets.y2 + dets.y1)/2);
+        dets.area = abs(dets.x2-dets.x1)*abs(dets.y2-dets.y1);
+        dets.aspect_ratio = abs((dets.y2-dets.y1)/(dets.x2-dets.x1));
         
         detsLeft.push_back(dets);
 
@@ -201,7 +203,7 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
 
     // Compute the depth of the detections which are in both cameras
     float dist_threshold = 20000000.0;
-    float area_threshold = 70000000.0;
+    float area_threshold = 0.2; // From 0 to 1
 
 
     float depth = 0.0, depth_sum = 0.0, depth_avg = 0.0;
@@ -209,14 +211,17 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
     float disparity;
     int disparity_null_counter = 0;
     int n_points;
+    int y_threshold = 30;  // In pixels
+    float ratio_threshold = 0.2; // From 0 to 1
 
     for(const auto& dR : detsRight){
         for(const auto& dL : detsLeft){
-            if(dR.type == dL.type && dR.type == "bottle"){
+            if(dR.type == dL.type){
                 float distance = sqrt(pow(dL.cx-dR.cx,2)+pow(dL.cy-dR.cy,2));
-                float area = abs(dR.area-dL.area);
-                
-                if((distance <= dist_threshold) && (area <= area_threshold)){
+                float area_error = abs(dR.area-dL.area)/(dR.area+dL.area);
+                float ratio_error = abs(dR.aspect_ratio-dL.aspect_ratio)/(dR.aspect_ratio+dL.aspect_ratio);
+                // Bbox matching by comparing areas and y center coordinates
+                if((area_error <= area_threshold) && (ratio_error <= ratio_threshold) && (dL.cy <= (dR.cy + y_threshold)) && (dL.cy >= (dR.cy - y_threshold))){
                     // Computing the depth
                     
                     // int disparity = (int)abs((dR.x1-CX_right/2)-(dL.x1-CX_left/2));
@@ -265,8 +270,8 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
                     // float X_centroid = (B*dL.cx)/center_bbox_disparity; // mm 
                     // float Y_centroid = (B*dL.cy)/center_bbox_disparity; // mm
 
-                    float Z_centroid = depth_avg;                       // mm
-                    float X_centroid = (Z_centroid*dL.cx)/FOCAL_LENGTH; // mm 
+                    float Z_centroid = depth_avg;
+                    float X_centroid = B/2 + (Z_centroid*dL.cx)/FOCAL_LENGTH; // mm 
                     float Y_centroid = (Z_centroid*dL.cy)/FOCAL_LENGTH; // mm
                     
                     // habra que hacer una traslacion al centro de la camara, porq se esta referenciado la X a la camara dcha
@@ -280,20 +285,20 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
                     // Print spatial X inside the bbox
                     std::stringstream XStr;
                     XStr << std::fixed << std::setprecision(3) << "X: " << X_centroid/10 << " cm";;
-                    cv::putText(frame_rectified_right, XStr.str(), cv::Point(dR.x1 + 10, dR.y1 + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
-                    cv::putText(frame_rectified_left, XStr.str(), cv::Point(dL.x1 + 10, dL.y1 + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);  
+                    cv::putText(frame_rectified_right, XStr.str(), cv::Point(dR.x1 + CX_RIGHT + 10, dR.y1 + CY_RIGHT + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    cv::putText(frame_rectified_left, XStr.str(), cv::Point(dL.x1 + CX_LEFT + 10, dL.y1 + CY_LEFT + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);  
 
                     // Print spatial Y inside the bbox
                     std::stringstream YStr;
                     YStr << std::fixed << std::setprecision(3) << "Y: "<< Y_centroid/10 << " cm";;
-                    cv::putText(frame_rectified_right, YStr.str(), cv::Point(dR.x1 + 10, dR.y1 + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
-                    cv::putText(frame_rectified_left, YStr.str(), cv::Point(dL.x1 + 10, dL.y1 + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    cv::putText(frame_rectified_right, YStr.str(), cv::Point(dR.x1 + CX_RIGHT + 10, dR.y1 + CY_RIGHT + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    cv::putText(frame_rectified_left, YStr.str(), cv::Point(dL.x1 + CX_LEFT + 10, dL.y1 + CY_LEFT + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
 
                     // Print spatial Z inside the bbox
                     std::stringstream ZStr;
                     ZStr << std::fixed << std::setprecision(3) << "Z: " << Z_centroid/10 << " cm";;
-                    cv::putText(frame_rectified_right, ZStr.str(), cv::Point(dR.x1 + 10, dR.y1 + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
-                    cv::putText(frame_rectified_left, ZStr.str(), cv::Point(dL.x1 + 10, dL.y1 + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    cv::putText(frame_rectified_right, ZStr.str(), cv::Point(dR.x1 + CX_RIGHT + 10, dR.y1 + CY_RIGHT + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    cv::putText(frame_rectified_left, ZStr.str(), cv::Point(dL.x1 + CX_LEFT + 10, dL.y1 + CY_LEFT + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
                     
                     // ROS message for bounding boxes
                     bbox.Class = dR.type;

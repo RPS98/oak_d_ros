@@ -10,6 +10,7 @@ struct detections{
     int x2, y2; // Bounding box coordinates
     float cx, cy; // Center coordinates
     float area;
+    float aspect_ratio;
 };
 
 class OakDTaskStereoNeuralInference : public OakDTask
