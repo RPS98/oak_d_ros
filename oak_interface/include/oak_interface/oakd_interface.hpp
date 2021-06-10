@@ -36,6 +36,9 @@ private:
     // Start functions
     void read_param(OakPublishList& publish_list);
     void create_use_list(OakUseList& use_list, OakPublishList& publish_list);
+
+    int seq = 1;
+    std_msgs::Header header;
 };
 
 #endif

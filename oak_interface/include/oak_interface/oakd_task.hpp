@@ -45,7 +45,7 @@ class OakDTask
 public:
     virtual void start(ros::NodeHandle& nh) = 0;
     virtual void run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                     OakQueueIndex& queue_index) = 0;
+                     OakQueueIndex& queue_index, std_msgs::Header header) = 0;
     virtual void stop() = 0;
 };
 

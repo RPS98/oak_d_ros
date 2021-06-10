@@ -23,13 +23,14 @@ void OakDTaskDepth::start(ros::NodeHandle& nh){
 }
 
 void OakDTaskDepth::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                      OakQueueIndex& queue_index){
+                      OakQueueIndex& queue_index, std_msgs::Header header){
 
     depth_frame = streams_queue[queue_index.inx_depth]->tryGet<dai::ImgFrame>();
 
     if(!(depth_frame == nullptr)){
         // Send image
         OakDUtils::getRosMsg(depth_frame,depth_image_msg, true);
+        depth_image_msg.header.stamp = header.stamp;
         depth_pub.publish(depth_image_msg);
 
         // Send info

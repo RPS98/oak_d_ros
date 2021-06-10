@@ -103,8 +103,8 @@ void OakDPipeline::start(OakUseList& use_list,
             //stereo->setExtendedDisparity(bool enable);
             stereo->setRectifyEdgeFillColor(0);
             //stereo->setRectifyMirrorFrame(bool enable);
-            stereo->setOutputRectified(use_list.use_rectified); // DEPRECATED
-            stereo->setOutputDepth(use_list.use_depth); // DEPRECATED
+            //stereo->setOutputRectified(use_list.use_rectified); // DEPRECATED
+            //stereo->setOutputDepth(use_list.use_depth); // DEPRECATED
 
             // Needed to work
             monoLeft->out.link(stereo->left);
@@ -146,21 +146,26 @@ void OakDPipeline::start(OakUseList& use_list,
     if(use_list.use_imu){
         // XLinkout
         auto xoutIMU = pipeline_.create<dai::node::XLinkOut>();
-        // imu
+        // IMU node
         auto imu = pipeline_.create<dai::node::IMU>();
-        xoutIMU->setStreamName("imu");
+        
         dai::IMUSensorConfig sensorConfig;
-        sensorConfig.reportIntervalUs = 2500; // 400 Hz (el maximo por ahora)
-        sensorConfig.sensorId = dai::IMUSensorId::RAW_ACCELEROMETER;
+        // sensorConfig.reportIntervalUs = 2500; // 400 Hz (el maximo por ahora)
+        sensorConfig.sensorId = dai::IMUSensor::ACCELEROMETER_RAW;
         imu->enableIMUSensor(sensorConfig);
-        sensorConfig.sensorId = dai::IMUSensorId::RAW_GYROSCOPE;
+        sensorConfig.sensorId = dai::IMUSensor::GYROSCOPE_RAW;
         imu->enableIMUSensor(sensorConfig);
-        sensorConfig.sensorId = dai::IMUSensorId::ROTATION_VECTOR;            imu->enableIMUSensor(sensorConfig);
+        sensorConfig.sensorId = dai::IMUSensor::ROTATION_VECTOR;            
+        imu->enableIMUSensor(sensorConfig);
 
         imu->setBatchReportThreshold(1);
         imu->setMaxBatchReports(5);
-            
+        
+        // Link
         imu->out.link(xoutIMU->input);
+
+        // Data from device to host via XLink
+        xoutIMU->setStreamName("imu");
         }
 
     // RGB Camera
@@ -268,7 +273,7 @@ void OakDPipeline::start(OakUseList& use_list,
 
     // CONNECT TO DEVICE
     dev_ = std::make_unique<dai::Device>(pipeline_);
-    dev_->startPipeline();
+    // dev_->startPipeline(); // DEPRECATED
 
     int counter = 0;
     int queueSize = 4;

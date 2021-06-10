@@ -17,6 +17,8 @@
 #include <message_filters/time_synchronizer.h>
 #include <functional>
 
+#include <std_msgs/UInt32.h>
+
 // OpenCV library
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>

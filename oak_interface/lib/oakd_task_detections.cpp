@@ -50,7 +50,7 @@ void OakDTaskDetections::start(ros::NodeHandle& nh){
 };
 
 void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                      OakQueueIndex& queue_index){
+                      OakQueueIndex& queue_index, std_msgs::Header header){
     
     using namespace std::chrono;
     // std::cout << "Running OakDTaskDetections" << std::endl;
@@ -143,7 +143,7 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
     //cv::imshow("preview", frame);
 
     // From cv::Mat to cv_bridge::CvImage 
-    std_msgs::Header header;
+    // std_msgs::Header header;
     cv_bridge::CvImage frame_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, frame);
     cv_bridge::CvImage depth_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, depthFrameColor);
 
