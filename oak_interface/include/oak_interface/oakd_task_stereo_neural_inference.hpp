@@ -24,6 +24,9 @@ public: // OakDTask
     void run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
              OakQueueIndex& queue_index);
     void stop();
+    static bool wayToSort(const detections& i, const detections& j);
+
+    
 
 private:
     static const std::vector<std::string> label_map;

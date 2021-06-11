@@ -41,6 +41,11 @@ void OakDTaskStereoNeuralInference::start(ros::NodeHandle& nh){
     counter_ = 0;
     fps_ = 0;
     color_ = cv::Scalar(255, 255, 255);
+    
+};
+
+bool OakDTaskStereoNeuralInference::wayToSort(const detections& i, const detections& j){ 
+    return i.cx < j.cx;
 };
 
 void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
@@ -59,6 +64,7 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
     
     auto dets_right = det_right->detections;
     auto dets_left = det_left->detections;
+
 
     counter_++;
     auto currentTime = steady_clock::now();
@@ -79,6 +85,13 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
     cv::imshow("right", frame_right);
     cv::imshow("rectified_right", image_cropped);
     cv::waitKey(1); */
+
+    int bottle_counter_R = 0;
+    int monitor_counter_R = 0;
+    int table_counter_R = 0;
+    int chair_counter_R = 0;
+
+    
 
     for(const auto& d : dets_right) {
         // x1, x2, x3 , x4 -> lateral coordinates in pixels of the top left and bottom right corners of bbox
@@ -125,8 +138,24 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
         dets.cy = (float)(dets.y1 + dets.y2)/2;
         dets.area = abs(dets.x2-dets.x1)*abs(dets.y2-dets.y1);
         dets.aspect_ratio = abs((dets.y2-dets.y1)/(dets.x2-dets.x1));
+        if (dets.type == "bottle"){
+            bottle_counter_R++;
+            detsRight.push_back(dets);
+        } 
+        else if (dets.type == "chair"){
+            chair_counter_R++;
+            detsRight.push_back(dets);
+        } 
+        else if (dets.type == "tvmonitor") {
+            monitor_counter_R++;
+            detsRight.push_back(dets);
+        }
+        else if (dets.type == "diningtable") {
+            table_counter_R++;
+            detsRight.push_back(dets);
+        } 
 
-        detsRight.push_back(dets);
+        
 
         /*bbox.Class = (std::string)labelStr;
         bbox.probability = (float)d.confidence;
@@ -142,6 +171,11 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
 
     cv::Mat frame_left = OakDUtils::getCvFrame(left);
     cv::Mat frame_rectified_left = OakDUtils::getCvFrame(rectified_left);
+
+    int bottle_counter_L = 0;
+    int monitor_counter_L = 0;
+    int table_counter_L = 0;
+    int chair_counter_L = 0;
 
     for(const auto& d : dets_left) {
         int x1 = d.xmin * frame_left.cols;
@@ -186,8 +220,24 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
         dets.cy = (float)((dets.y2 + dets.y1)/2);
         dets.area = abs(dets.x2-dets.x1)*abs(dets.y2-dets.y1);
         dets.aspect_ratio = abs((dets.y2-dets.y1)/(dets.x2-dets.x1));
-        
-        detsLeft.push_back(dets);
+
+        if (dets.type == "bottle"){
+            bottle_counter_L++;
+            detsLeft.push_back(dets);
+        } 
+        else if (dets.type == "chair"){
+            chair_counter_L++;
+            detsLeft.push_back(dets);
+        } 
+        else if (dets.type == "tvmonitor") {
+            monitor_counter_L++;
+            detsLeft.push_back(dets);
+        }
+        else if (dets.type == "diningtable") {
+            table_counter_L++;
+            detsLeft.push_back(dets);
+        } 
+
 
         // bbox.Class = (std::string)labelStr;
         // bbox.probability = (float)d.confidence;
@@ -205,16 +255,97 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
     float dist_threshold = 20000000.0;
     float area_threshold = 0.2; // From 0 to 1
 
-
     float depth = 0.0, depth_sum = 0.0, depth_avg = 0.0;
     float reduction = 0.0;
     float disparity;
     int disparity_null_counter = 0;
     int n_points;
     int y_threshold = 30;  // In pixels
-    float ratio_threshold = 0.2; // From 0 to 1
+    float ratio_threshold = 0.3; // From 0 to 1
+    int i = 0;
+
+    // Erase objects which counters of each image don't match
+    if (bottle_counter_R != bottle_counter_L){
+        i = 0;
+        for(const auto& dR : detsRight){
+            if (dR.type == "bottle") detsRight.erase(detsRight.begin() + i);
+            else i++;
+        }
+        i = 0;
+        for(const auto& dL : detsLeft){
+            if (dL.type == "bottle") detsLeft.erase(detsLeft.begin() + i);
+            else i++;
+        }
+    }
+
+    if (chair_counter_R != chair_counter_L){
+        i = 0;
+        for(const auto& dR : detsRight){
+            if (dR.type == "chair") detsRight.erase(detsRight.begin() + i);
+            else i++;
+        }
+        i = 0;
+        for(const auto& dL : detsLeft){
+            if (dL.type == "chair") detsLeft.erase(detsLeft.begin() + i);
+            else i++;
+        }
+    }
+
+    if (table_counter_R != table_counter_L){
+        i = 0;
+        for(const auto& dR : detsRight){
+            if (dR.type == "diningtable") detsRight.erase(detsRight.begin() + i);
+            else i++;
+        }
+        i = 0;
+        for(const auto& dL : detsLeft){
+            if (dL.type == "diningtalble") detsLeft.erase(detsLeft.begin() + i);
+            else i++;
+        }
+    }
+
+    if (monitor_counter_R != monitor_counter_L) {
+        i = 0;
+        for(const auto& dR : detsRight){
+            if (dR.type == "tvmonitor") detsRight.erase(detsRight.begin() + i);
+            else i++;
+        }
+        i = 0;
+        for(const auto& dL : detsLeft){
+            if (dL.type == "tvmonitor") detsLeft.erase(detsLeft.begin() + i);
+            else i++;
+        }
+    }
+
+    for (const auto& n : detsRight)
+        std::cout << n.cx << " ";
+
+    detections temp;
+    for(i = 0; i < detsRight.size(); i++){
+        if(i < (detsRight.size()-1)){
+            if (detsRight[i].cx > detsRight[i+1].cx) {
+                temp = detsRight[i];
+                detsRight[i] = detsRight[i+1];
+                detsRight[i+1] = temp;
+            }
+        }
+    }
+
+    // for(i = 0; i < detsLeft.size(); i++){
+    //     if((i <= (detsLeft.size()-2)) && (detsLeft[i].cx < detsLeft[i+1].cx)) {
+    //         temp = detsLeft[i];
+    //         detsLeft[i] = detsLeft[i+1];
+    //         detsLeft[i+1] = temp;
+    //     }
+    // }
+
+    std::cout << "\n"<<std::endl;
+    //std::sort(detsRight.begin(), detsRight.end(), OakDTaskStereoNeuralInference::wayToSort);
+    for (const auto& n : detsRight)
+        std::cout << n.cx << " ";
 
     for(const auto& dR : detsRight){
+        i = 0;
         for(const auto& dL : detsLeft){
             if(dR.type == dL.type){
                 float distance = sqrt(pow(dL.cx-dR.cx,2)+pow(dL.cy-dR.cy,2));
@@ -311,9 +442,13 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
                     bbox.x_centroid = X_centroid;
                     bbox.y_centroid = Y_centroid;
                     msg.bounding_boxes.push_back(bbox);
-                }
 
-            }   
+                    // Erase matched detected object
+                    detsLeft.erase(detsLeft.begin() + i);
+                    break;
+                }
+            }
+            i++;  
         }
     }
 
