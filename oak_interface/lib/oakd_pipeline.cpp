@@ -4,7 +4,7 @@ void OakDPipeline::start(OakUseList& use_list,
                          std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue,
                          OakQueueIndex& queue_index){
     
-    // Delcaration of different nodes
+    // Declaration of different nodes
 
     // MonoCamera nodes
     std::shared_ptr<dai::node::MonoCamera> monoLeft = nullptr;
@@ -40,6 +40,7 @@ void OakDPipeline::start(OakUseList& use_list,
     std::shared_ptr<dai::node::XLinkOut> nnLeftOut = nullptr;
     std::shared_ptr<dai::node::XLinkOut> xoutManipRight = nullptr;
     std::shared_ptr<dai::node::XLinkOut> xoutManipLeft = nullptr;
+
     // Mono Camera
     if(use_list.use_mono){
         // XLinkOut
@@ -114,17 +115,15 @@ void OakDPipeline::start(OakUseList& use_list,
             //stereo->setExtendedDisparity(bool enable);
             stereo->setRectifyEdgeFillColor(0);
             //stereo->setRectifyMirrorFrame(bool enable);
-            //stereo->setOutputRectified(use_list.use_rectified); // DEPRECATED
-            //stereo->setOutputDepth(use_list.use_depth); // DEPRECATED
+            stereo->setOutputRectified(use_list.use_rectified); // DEPRECATED
+            stereo->setOutputDepth(true); // DEPRECATED
 
             // Needed to work
             monoLeft->out.link(stereo->left);
             monoRight->out.link(stereo->right);
             
             // Link plugins CAM -> STEREO -> XLINK
-            if(!use_list.use_rgb_detections){
-                stereo->depth.link(xoutDepth->input); // RAW16 encoded (0..65535) depth data in millimeters
-            }
+            stereo->depth.link(xoutDepth->input); // RAW16 encoded (0..65535) depth data in millimeters
             
             //stereo->disparity.link(xoutDepth->input);   // RAW8 / RAW16 encoded disparity data
             //stereo->syncedLeft.link(xoutLeft->input);  // Passthrough ImgFrame message from ‘left’ Input
@@ -153,32 +152,6 @@ void OakDPipeline::start(OakUseList& use_list,
         }
     }
 
-    // IMU
-    if(use_list.use_imu){
-        // XLinkout
-        auto xoutIMU = pipeline_.create<dai::node::XLinkOut>();
-        // IMU node
-        auto imu = pipeline_.create<dai::node::IMU>();
-        
-        dai::IMUSensorConfig sensorConfig;
-        // sensorConfig.reportIntervalUs = 2500; // 400 Hz (el maximo por ahora)
-        sensorConfig.sensorId = dai::IMUSensor::ACCELEROMETER_RAW;
-        imu->enableIMUSensor(sensorConfig);
-        sensorConfig.sensorId = dai::IMUSensor::GYROSCOPE_RAW;
-        imu->enableIMUSensor(sensorConfig);
-        sensorConfig.sensorId = dai::IMUSensor::ROTATION_VECTOR;            
-        imu->enableIMUSensor(sensorConfig);
-
-        imu->setBatchReportThreshold(1);
-        imu->setMaxBatchReports(5);
-        
-        // Link
-        imu->out.link(xoutIMU->input);
-
-        // Data from device to host via XLink
-        xoutIMU->setStreamName("imu");
-        }
-
     // RGB Camera
     if(use_list.use_rgb){
         // XLinkOut
@@ -196,7 +169,7 @@ void OakDPipeline::start(OakUseList& use_list,
 
         // ColorCamera node
         colorCam = pipeline_.create<dai::node::ColorCamera>();
-        if(use_list.use_rgb_detections) {
+        if(use_list.use_detections) {
             colorCam->setPreviewSize(300, 300);
         } else {
             colorCam->setPreviewSize(1280, 720);
@@ -212,7 +185,10 @@ void OakDPipeline::start(OakUseList& use_list,
             ROS_INFO_STREAM("Default rgb camera resolution 720");
             colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_1080_P);
         }
-        //colorCam->setInterleaved(false); // Function getRosMsg do not support
+        if(use_list.use_detections) {
+            colorCam->setInterleaved(false); // Function getRosMsg do not support
+        }
+        else{colorCam->setInterleaved(true);}
         colorCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::BGR);
         colorCam->setFps(rgb_camera_fps);
         // colorCam->setCamId(int64_t id);
@@ -225,7 +201,7 @@ void OakDPipeline::start(OakUseList& use_list,
         // colorCam->setPreviewKeepAspectRatio(bool keep);
 
         // Link plugins CAM -> STEREO -> XLINK
-        if(!use_list.use_rgb_detections) {
+        if(!use_list.use_detections) {
             colorCam->preview.link(xoutRGB->input); // BGR/RGB planar/interleaved encoded
         }
          
@@ -240,9 +216,7 @@ void OakDPipeline::start(OakUseList& use_list,
 
     // Spatial Detection Network
     // If use detections
-    if(use_list.use_rgb_detections){
-
-        colorCam->setInterleaved(false);
+    if(use_list.use_detections){
 
         std::string nnBlobPath = "default";
         if (ros::param::has("/nnBlobPath")) {
@@ -279,10 +253,11 @@ void OakDPipeline::start(OakUseList& use_list,
              stereo->depth.link(spatialDetectionNetwork->inputDepth);
              spatialDetectionNetwork->passthroughDepth.link(xoutDepth->input);
         }
+
         
     }
 
-    if(use_list.use_stereo_detections){
+    if(use_list.use_stereo_neural_inference){
 
         std::string nnBlobPath = "default";
         if (ros::param::has("/nnBlobPath")) {
@@ -342,7 +317,7 @@ void OakDPipeline::start(OakUseList& use_list,
 
     // CONNECT TO DEVICE
     dev_ = std::make_unique<dai::Device>(pipeline_);
-    // dev_->startPipeline(); // DEPRECATED
+    dev_->startPipeline();
 
     int counter = 0;
     int queueSize = 4;
@@ -367,17 +342,13 @@ void OakDPipeline::start(OakUseList& use_list,
         streams_queue.push_back(dev_->getOutputQueue("rgb", queueSize, true));
         queue_index.inx_rgb = counter; counter++;
     }
-    if(use_list.use_rgb_detections){
+    if(use_list.use_detections){
         streams_queue.push_back(dev_->getOutputQueue("detections", queueSize, false));
-        queue_index.inx_rgb_detections = counter; counter++; 
+        queue_index.inx_detections = counter; counter++; 
         streams_queue.push_back(dev_->getOutputQueue("boundingBoxDepthMapping", queueSize, false));
         queue_index.inx_bbDepthMapping = counter; counter++; 
     }
-    if(use_list.use_imu){
-        streams_queue.push_back(dev_->getOutputQueue("imu", queueSize, true));
-        queue_index.inx_imu = counter; counter++;
-    }
-    if(use_list.use_stereo_detections){
+    if(use_list.use_stereo_neural_inference){
         streams_queue.push_back(dev_->getOutputQueue("detections_right", queueSize, false));
         queue_index.inx_detections_right = counter; counter++; 
         streams_queue.push_back(dev_->getOutputQueue("detections_left", queueSize, false));
@@ -390,7 +361,9 @@ void OakDPipeline::start(OakUseList& use_list,
         queue_index.inx_rectified_left = counter; counter++;
         streams_queue.push_back(dev_->getOutputQueue("rectified_right", queueSize, false));
         queue_index.inx_rectified_right = counter; counter++;
+        
     }
+    
 
     std::cout << "Pipeline initialized correctly" << std::endl;
 }

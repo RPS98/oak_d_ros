@@ -12,7 +12,7 @@ public:
 public: // OakDTask
     void start(ros::NodeHandle& nh);
     void run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-             OakQueueIndex& queue_index, std_msgs::Header header);
+             OakQueueIndex& queue_index);
     void stop();
 
 private:
@@ -25,9 +25,6 @@ private:
     // Publishers
     ros::Publisher rgb_pub;
     ros::Publisher rgb_info_pub;
-
-    // Use interleaved
-    bool interleaved = true;
 };
 
 #endif

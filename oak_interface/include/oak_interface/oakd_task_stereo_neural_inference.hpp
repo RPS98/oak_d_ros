@@ -1,5 +1,5 @@
-#ifndef OAKD_TASK_STEREO_DETECTIONS
-#define OAKD_TASK_STEREO_DETECTIONS
+#ifndef OAKD_TASK_STEREO_NEURAL_INFERENCE
+#define OAKD_TASK_STEREO_NEURAL_INFERENCE
 
 #include "oakd_task.hpp"
 
@@ -13,16 +13,16 @@ struct detections{
     float aspect_ratio;
 };
 
-class OakDTaskStereoDetections : public OakDTask
+class OakDTaskStereoNeuralInference : public OakDTask
 {
 public:
-    OakDTaskStereoDetections() = default;
-    ~OakDTaskStereoDetections() = default;
+    OakDTaskStereoNeuralInference() = default;
+    ~OakDTaskStereoNeuralInference() = default;
 
 public: // OakDTask
     void start(ros::NodeHandle& nh);
     void run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-             OakQueueIndex& queue_index, std_msgs::Header header);
+             OakQueueIndex& queue_index);
     void stop();
     static bool wayToSort(const detections& i, const detections& j);
 

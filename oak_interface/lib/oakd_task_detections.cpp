@@ -1,23 +1,24 @@
-#include <oak_interface/oakd_task_rgb_detections.hpp>
+#include <oak_interface/oakd_task_detections.hpp>
 
-const std::vector<std::string> OakDTaskRGBDetections::label_map = {"background",  "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",   "car",  "cat",   "chair",    "cow",
+const std::vector<std::string> OakDTaskDetections::label_map = {"background",  "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",   "car",  "cat",   "chair",    "cow",
                                   "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"}; 
 
-void OakDTaskRGBDetections::start(ros::NodeHandle& nh){
+void OakDTaskDetections::start(ros::NodeHandle& nh){
     
-    std::cout << "Starting OakDTaskRGBDetections" << std::endl;
+    std::cout << "Starting OakDTaskDetections" << std::endl;
 
     std::string deviceName = "oak";
     std::string camera_param_uri = "package://oak_interface/params/camera";
 
     int bad_params = 0;
 
-    if (ros::param::has("/camera_name")) {
-        ros::param::get("/camera_name", deviceName);
-    }
-    if (ros::param::has("/camera_param_uri")) {
-        ros::param::get("/camera_param_uri", camera_param_uri);
-    }
+    bad_params += !nh.getParam("camera_name", deviceName);
+    bad_params += !nh.getParam("camera_param_uri", camera_param_uri);
+    /*
+    if (bad_params > 0)
+    {
+        throw std::runtime_error("Couldn't find one of the parameters");
+    } */
     
     // ROS Publisher
     detections_pub = nh.advertise<oak_interface::BoundingBoxes>("/detections_spatial", 1);
@@ -29,34 +30,16 @@ void OakDTaskRGBDetections::start(ros::NodeHandle& nh){
     counter_ = 0;
     fps_ = 0;
     color_ = cv::Scalar(255, 255, 255);
-
-    if (ros::param::has("/publish_rgb"))
-    {
-        ros::param::get("/publish_rgb", publish_rgb);
-        if(publish_rgb){
-
-            std::string color_uri = camera_param_uri + "/" + "color.yaml";
-            
-            // ROS
-            // Publishers
-            rgb_pub = nh.advertise<sensor_msgs::Image>("rgb/image", 1);
-            rgb_info_pub = nh.advertise<sensor_msgs::CameraInfo>("rgb/info", 1);
-
-            rgb_camInfoManager = std::make_unique<camera_info_manager::CameraInfoManager>(nh, deviceName, color_uri);
-            rgb_CameraInfo = rgb_camInfoManager->getCameraInfo();
-        }
-    }
-        
 };
 
-void OakDTaskRGBDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                      OakQueueIndex& queue_index, std_msgs::Header header){
+void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
+                      OakQueueIndex& queue_index){
     
     using namespace std::chrono;
-    // std::cout << "Running OakDTaskRGBDetections" << std::endl;
+    std::cout << "Running OakDTaskDetections" << std::endl;
 
     imgFrame = streams_queue[queue_index.inx_rgb]->get<dai::ImgFrame>();
-    det = streams_queue[queue_index.inx_rgb_detections]->get<dai::SpatialImgDetections>();
+    det = streams_queue[queue_index.inx_detections]->get<dai::SpatialImgDetections>();
     depth = streams_queue[queue_index.inx_depth]->get<dai::ImgFrame>();
 
     //OakDUtils utils;
@@ -130,9 +113,10 @@ void OakDTaskRGBDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue
         bbox.ymin = (int)y1;
         bbox.xmax = (int)x2;
         bbox.ymax = (int)y2;
-        bbox.depth = (float)d.spatialCoordinates.z;      // mm
-        bbox.x_centroid = (float)d.spatialCoordinates.x; // mm
-        bbox.y_centroid = (float)d.spatialCoordinates.y; // mm
+        bbox.depth = (float)d.spatialCoordinates.z;
+        bbox.x_centroid = (float)d.spatialCoordinates.x;
+        bbox.y_centroid = (float)d.spatialCoordinates.y;
+
         msg.bounding_boxes.push_back(bbox);
 
     }
@@ -144,7 +128,7 @@ void OakDTaskRGBDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue
     //cv::imshow("preview", frame);
 
     // From cv::Mat to cv_bridge::CvImage 
-    // std_msgs::Header header;
+    std_msgs::Header header;
     cv_bridge::CvImage frame_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, frame);
     cv_bridge::CvImage depth_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, depthFrameColor);
 
@@ -160,23 +144,9 @@ void OakDTaskRGBDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue
     detections_pub.publish(msg);
     msg.bounding_boxes.clear();
 
-
-    if(publish_rgb){
-        cv::Mat frame_rgb = OakDUtils::getCvFrame(imgFrame);
-        cv_bridge::CvImage frame_rgb_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, frame_rgb);
-        frame_rgb_cv_bridge.toImageMsg(rgb_image_msg);
-        // Send image
-        rgb_pub.publish(rgb_image_msg);
-
-        // Send info
-        rgb_CameraInfo.header.seq = imgFrame->getSequenceNum();
-        rgb_CameraInfo.header.stamp = ros::Time::now();
-        rgb_info_pub.publish(rgb_CameraInfo);  
-    }
-
 };
 
-void OakDTaskRGBDetections::stop(){
+void OakDTaskDetections::stop(){
     detections_pub.shutdown();
     image_detections_pub.shutdown();
     depth_pub.shutdown();

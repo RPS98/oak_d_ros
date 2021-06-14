@@ -1,7 +1,5 @@
-#include <oak_interface/oakd_task_stereo_detections.hpp>
+#include <oak_interface/oakd_task_stereo_neural_inference.hpp>
 #include <cmath>
-#include <vector>
-#include <algorithm>
 
 #define F_LEFT 872.2578152369078                // Focal length for left camera in pixels
 #define F_RIGHT 875.2617250748619               // Focal length for right camera in pixels
@@ -13,12 +11,12 @@
 #define CY_RIGHT 372.6642906480663              // CY for right camera in pixels
 #define N_REDUCTIONS 2                          // Number of reductions for computing depth average
 
-const std::vector<std::string> OakDTaskStereoDetections::label_map = {"background",  "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",   "car",  "cat",   "chair",    "cow",
+const std::vector<std::string> OakDTaskStereoNeuralInference::label_map = {"background",  "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",   "car",  "cat",   "chair",    "cow",
                                   "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"}; 
 
-void OakDTaskStereoDetections::start(ros::NodeHandle& nh){
+void OakDTaskStereoNeuralInference::start(ros::NodeHandle& nh){
     
-    std::cout << "Starting OakDTaskStereoDetections" << std::endl;
+    std::cout << "Starting OakDTaskStereoNeuralInference" << std::endl;
 
     std::string deviceName = "oak";
     std::string camera_param_uri = "package://oak_interface/params/camera";
@@ -34,7 +32,7 @@ void OakDTaskStereoDetections::start(ros::NodeHandle& nh){
     } */
     
     // ROS Publisher
-    detections_pub = nh.advertise<oak_interface::BoundingBoxes>("/detections_spatial", 1);
+    detections_pub = nh.advertise<oak_interface::BoundingBoxes>("/detections", 1);
     image_right_det_pub = nh.advertise<sensor_msgs::Image>("/detections_image_right", 1);
     image_left_det_pub = nh.advertise<sensor_msgs::Image>("/detections_image_left", 1);
 
@@ -46,12 +44,12 @@ void OakDTaskStereoDetections::start(ros::NodeHandle& nh){
     
 };
 
-bool OakDTaskStereoDetections::wayToSort(const detections& i, const detections& j){ 
+bool OakDTaskStereoNeuralInference::wayToSort(const detections& i, const detections& j){ 
     return i.cx < j.cx;
 };
 
-void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                      OakQueueIndex& queue_index, std_msgs::Header header){
+void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
+                      OakQueueIndex& queue_index){
     
     using namespace std::chrono;
     
@@ -138,8 +136,8 @@ void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQu
         dets.y2 = (int)(y2R - CY_RIGHT);
         dets.cx = (float)(dets.x1 + dets.x2)/2;
         dets.cy = (float)(dets.y1 + dets.y2)/2;
-        dets.area = (float)abs(dets.x2-dets.x1)*abs(dets.y2-dets.y1);
-        dets.aspect_ratio = (float)abs((dets.y2-dets.y1)/(dets.x2-dets.x1));
+        dets.area = abs(dets.x2-dets.x1)*abs(dets.y2-dets.y1);
+        dets.aspect_ratio = abs((dets.y2-dets.y1)/(dets.x2-dets.x1));
         if (dets.type == "bottle"){
             bottle_counter_R++;
             detsRight.push_back(dets);
@@ -220,8 +218,8 @@ void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQu
         dets.y2 = (int)y2L - CY_LEFT;
         dets.cx = (float)((dets.x2 + dets.x1)/2);
         dets.cy = (float)((dets.y2 + dets.y1)/2);
-        dets.area = (float)abs(dets.x2-dets.x1)*abs(dets.y2-dets.y1);
-        dets.aspect_ratio = (float)abs((dets.y2-dets.y1)/(dets.x2-dets.x1));
+        dets.area = abs(dets.x2-dets.x1)*abs(dets.y2-dets.y1);
+        dets.aspect_ratio = abs((dets.y2-dets.y1)/(dets.x2-dets.x1));
 
         if (dets.type == "bottle"){
             bottle_counter_L++;
@@ -254,14 +252,15 @@ void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQu
     }
 
     // Compute the depth of the detections which are in both cameras
-    //float dist_threshold = 20000000.0;
-    float area_threshold = 0.3; // From 0 to 1
+    float dist_threshold = 20000000.0;
+    float area_threshold = 0.2; // From 0 to 1
+
     float depth = 0.0, depth_sum = 0.0, depth_avg = 0.0;
     float reduction = 0.0;
     float disparity;
     int disparity_null_counter = 0;
     int n_points;
-    int y_threshold = 10;  // In pixels
+    int y_threshold = 30;  // In pixels
     float ratio_threshold = 0.3; // From 0 to 1
     int i = 0;
 
@@ -300,7 +299,7 @@ void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQu
         }
         i = 0;
         for(const auto& dL : detsLeft){
-            if (dL.type == "diningtable") detsLeft.erase(detsLeft.begin() + i);
+            if (dL.type == "diningtalble") detsLeft.erase(detsLeft.begin() + i);
             else i++;
         }
     }
@@ -318,17 +317,32 @@ void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQu
         }
     }
 
-    // std::cout << "Not sorted" << " ";
-    // for (const auto& n : detsRight)
-    //     std::cout << n.cx << " ";
+    for (const auto& n : detsRight)
+        std::cout << n.cx << " ";
 
-    std::sort(detsRight.begin(), detsRight.end(), OakDTaskStereoDetections::wayToSort);
-    std::sort(detsLeft.begin(), detsLeft.end(), OakDTaskStereoDetections::wayToSort);
-   
-    // std::cout << "Sorted " << " ";
-    // for (const auto& n : detsRight)
-    //     std::cout << n.cx << " ";
-    // std::cout << "\n"<<std::endl;
+    detections temp;
+    for(i = 0; i < detsRight.size(); i++){
+        if(i < (detsRight.size()-1)){
+            if (detsRight[i].cx > detsRight[i+1].cx) {
+                temp = detsRight[i];
+                detsRight[i] = detsRight[i+1];
+                detsRight[i+1] = temp;
+            }
+        }
+    }
+
+    // for(i = 0; i < detsLeft.size(); i++){
+    //     if((i <= (detsLeft.size()-2)) && (detsLeft[i].cx < detsLeft[i+1].cx)) {
+    //         temp = detsLeft[i];
+    //         detsLeft[i] = detsLeft[i+1];
+    //         detsLeft[i+1] = temp;
+    //     }
+    // }
+
+    std::cout << "\n"<<std::endl;
+    //std::sort(detsRight.begin(), detsRight.end(), OakDTaskStereoNeuralInference::wayToSort);
+    for (const auto& n : detsRight)
+        std::cout << n.cx << " ";
 
     for(const auto& dR : detsRight){
         i = 0;
@@ -350,12 +364,6 @@ void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQu
                     // std::cout<<"disparity: "<<disparity<<std::endl;
                     // std::cout<<"depth: "<<bbox.depth/1000<<std::endl;
                     // std::cout<<" "<<std::endl;
-                    std::cout << "aspect ratio R: " << dR.aspect_ratio <<std::endl;
-                    std::cout << "aspect ratio L " << dL.aspect_ratio <<std::endl;
-                    std::cout << "area error: " << area_error <<std::endl;
-                    std::cout << "ratio error: " << ratio_error <<std::endl;
-                    //std::cout << "CxR: " << dR.cx << "    " << "CxL: " << dL.cx <<std::endl;
-                    std::cout << "CyR: " << dR.cy << "    " << "CyL: " << dL.cy <<std::endl;
                     
                     // Depth calculation by reducing the size of the bbox and computing the average depth value 
                     for (int i=0;i<=N_REDUCTIONS;i++){
@@ -399,61 +407,59 @@ void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQu
                     
                     // habra que hacer una traslacion al centro de la camara, porq se esta referenciado la X a la camara dcha
 
-                    // std::cout<<" "<<std::endl;
-                    // std::cout<<"X: "<< X_centroid/10 <<std::endl;
-                    // std::cout<<"Y: "<< Y_centroid/10 <<std::endl;
-                    // std::cout<<"Z: "<< Z_centroid/10 <<std::endl;
-                    // std::cout<<" "<<std::endl;
+                    std::cout<<" "<<std::endl;
+                    std::cout<<"X: "<< X_centroid/10 <<std::endl;
+                    std::cout<<"Y: "<< Y_centroid/10 <<std::endl;
+                    std::cout<<"Z: "<< Z_centroid/10 <<std::endl;
+                    std::cout<<" "<<std::endl;
 
-                    // // Print spatial X inside the bbox
+                    // Print spatial X inside the bbox
                     // std::stringstream XStr;
                     // XStr << std::fixed << std::setprecision(3) << "X: " << X_centroid/10 << " cm";;
-                    // cv::putText(frame_right, XStr.str(), cv::Point(dR.x1 + CX_RIGHT + 10, dR.y1 + CY_RIGHT + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
-                    // cv::putText(frame_left, XStr.str(), cv::Point(dL.x1 + CX_LEFT + 10, dL.y1 + CY_LEFT + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);  
+                    // cv::putText(frame_rectified_right, XStr.str(), cv::Point(dR.x1 + CX_RIGHT + 10, dR.y1 + CY_RIGHT + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    // cv::putText(frame_rectified_left, XStr.str(), cv::Point(dL.x1 + CX_LEFT + 10, dL.y1 + CY_LEFT + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);  
 
                     // // Print spatial Y inside the bbox
                     // std::stringstream YStr;
                     // YStr << std::fixed << std::setprecision(3) << "Y: "<< Y_centroid/10 << " cm";;
-                    // cv::putText(frame_right, YStr.str(), cv::Point(dR.x1 + CX_RIGHT + 10, dR.y1 + CY_RIGHT + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
-                    // cv::putText(frame_left, YStr.str(), cv::Point(dL.x1 + CX_LEFT + 10, dL.y1 + CY_LEFT + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    // cv::putText(frame_rectified_right, YStr.str(), cv::Point(dR.x1 + CX_RIGHT + 10, dR.y1 + CY_RIGHT + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    // cv::putText(frame_rectified_left, YStr.str(), cv::Point(dL.x1 + CX_LEFT + 10, dL.y1 + CY_LEFT + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
 
                     // // Print spatial Z inside the bbox
                     // std::stringstream ZStr;
                     // ZStr << std::fixed << std::setprecision(3) << "Z: " << Z_centroid/10 << " cm";;
-                    // cv::putText(frame_right, ZStr.str(), cv::Point(dR.x1 + CX_RIGHT + 10, dR.y1 + CY_RIGHT + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
-                    // cv::putText(frame_left, ZStr.str(), cv::Point(dL.x1 + CX_LEFT + 10, dL.y1 + CY_LEFT + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    // cv::putText(frame_rectified_right, ZStr.str(), cv::Point(dR.x1 + CX_RIGHT + 10, dR.y1 + CY_RIGHT + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
+                    // cv::putText(frame_rectified_left, ZStr.str(), cv::Point(dL.x1 + CX_LEFT + 10, dL.y1 + CY_LEFT + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
 
-                    // Print spatial X inside the bbox
+                    //_-------------
                     std::stringstream XStr;
-                    XStr << std::fixed << std::setprecision(3) << "X: " << X_centroid/1000 << " m";;
+                    XStr << std::fixed << std::setprecision(3) << "X: " << X_centroid/10 << " cm";;
                     cv::putText(frame_right, XStr.str(), cv::Point(dR.x1*300/800 + 150 + 10, dR.y1*300/800 + 150 + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
                     cv::putText(frame_left, XStr.str(), cv::Point(dL.x1*300/800 + 150 + 10, dL.y1*300/800 + 150 + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);  
 
                     // Print spatial Y inside the bbox
                     std::stringstream YStr;
-                    YStr << std::fixed << std::setprecision(3) << "Y: "<< Y_centroid/1000 << " m";;
+                    YStr << std::fixed << std::setprecision(3) << "Y: "<< Y_centroid/10 << " cm";;
                     cv::putText(frame_right, YStr.str(), cv::Point(dR.x1*300/800 + 150 + 10, dR.y1*300/800 + 150 + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
                     cv::putText(frame_left, YStr.str(), cv::Point(dL.x1*300/800 + 150 + 10, dL.y1*300/800 + 150 + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
 
                     // Print spatial Z inside the bbox
                     std::stringstream ZStr;
-                    ZStr << std::fixed << std::setprecision(3) << "Z: " << Z_centroid/1000 << " m";;
+                    ZStr << std::fixed << std::setprecision(3) << "Z: " << Z_centroid/10 << " cm";;
                     cv::putText(frame_right, ZStr.str(), cv::Point(dR.x1*300/800 + 150 + 10, dR.y1*300/800 + 150 + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
                     cv::putText(frame_left, ZStr.str(), cv::Point(dL.x1*300/800 + 150 + 10, dL.y1*300/800 + 150 + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
                     
                     // ROS message for bounding boxes
-                    
                     bbox.Class = dR.type;
                     bbox.probability = dR.prob;
                     bbox.xmin = (int)dR.x1;
                     bbox.ymin = (int)dR.y1;
                     bbox.xmax = (int)dR.x2;
                     bbox.ymax = (int)dR.y2;
-                    bbox.depth = Z_centroid;        // mm
-                    bbox.x_centroid = X_centroid;   // mm
-                    bbox.y_centroid = Y_centroid;   // mm
+                    bbox.depth = Z_centroid; 
+                    bbox.x_centroid = X_centroid;
+                    bbox.y_centroid = Y_centroid;
                     msg.bounding_boxes.push_back(bbox);
-                    msg.header.stamp = header.stamp;
 
                     // Erase matched detected object
                     detsLeft.erase(detsLeft.begin() + i);
@@ -464,7 +470,6 @@ void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQu
         }
     }
 
-    
 
     // std::stringstream fpsStr;
     // fpsStr << std::fixed << std::setprecision(2) << fps_;
@@ -479,7 +484,7 @@ void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQu
     //cv::imshow("preview", frame);
 
     // From cv::Mat to cv_bridge::CvImage 
-    // std_msgs::Header header;
+    std_msgs::Header header;
     cv_bridge::CvImage frame_cv_bridge_right = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, frame_right);
     cv_bridge::CvImage frame_cv_bridge_left = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, frame_left);
 
@@ -503,7 +508,7 @@ void OakDTaskStereoDetections::run(std::vector<std::shared_ptr<dai::DataOutputQu
 
 };
 
-void OakDTaskStereoDetections::stop(){
+void OakDTaskStereoNeuralInference::stop(){
     detections_pub.shutdown();
     image_right_det_pub.shutdown();
     image_left_det_pub.shutdown();

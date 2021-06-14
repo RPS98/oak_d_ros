@@ -6,9 +6,25 @@
         "limitSymbolsToIncludedHeaders": true
       },
       "includePath": [
-        "/home/rafa/practicas_ws/devel/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/devel/include/**",
         "/opt/ros/melodic/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack_deprecated/common/drone_process/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/behaviors/behavior_packages/quadrotor_motion_with_mpc_control/subpackages/quadrotor_mpc_controller/mav_control_interface/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/behaviors/behavior_packages/quadrotor_motion_with_mpc_control/subpackages/quadrotor_mpc_controller/mav_disturbance_observer/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/behaviors/behavior_packages/quadrotor_motion_with_mpc_control/subpackages/quadrotor_mpc_controller/mav_linear_mpc/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/libraries/mav_comm/mav_msgs/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack_deprecated/libraries/mav_comm_rotors/mav_msgs_rotors/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/libraries/mav_comm/mav_planning_msgs/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/simulation/quadrotor_gazebo_simulator/motor_speed_controller/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/behaviors/behavior_packages/multi_sensor_fusion/subpackages/eth_msf/ethzasl_msf/msf_core/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/behaviors/behavior_packages/multi_sensor_fusion/subpackages/eth_msf/ethzasl_msf/msf_timing/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/behaviors/behavior_packages/multi_sensor_fusion/subpackages/eth_msf/ethzasl_msf/msf_updates/include/**",
         "/home/rafa/practicas_ws/src/oak_interface/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack_deprecated/libraries/mav_comm_rotors/planning_msgs/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/common/robot_process/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/simulation/quadrotor_gazebo_simulator/rotors_simulator/rotors_control/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/simulation/quadrotor_gazebo_simulator/rotors_simulator/rotors_gazebo_plugins/include/**",
+        "/home/rafa/workspace/ros/aerostack_catkin_ws/src/aerostack_stack/stack/simulation/quadrotor_gazebo_simulator/rotors_simulator/rotors_joy_interface/include/**",
         "/usr/include/**"
       ],
       "name": "ROS"
