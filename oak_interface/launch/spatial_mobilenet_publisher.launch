@@ -33,11 +33,11 @@
     <param name="publish_mono"              type="bool" value="true" />
     <param name="publish_depth"             type="bool" value="true" />
     <param name="publish_rectified"         type="bool" value="false" />
-    <param name="publish_rgb"               type="bool" value="false" />
+    <param name="publish_rgb"               type="bool" value="true" />
 
     <!-- Neural Network -->
-    <param name="publish_detections" type="bool" value="true" />
-    <param name="publish_stereo_neural_inference" type="bool" value="false" /> 
+    <param name="publish_rgb_detections" type="bool" value="true" />
+    <param name="publish_stereo_detections" type="bool" value="false" /> 
     <param name="nnBlobPath"         type="string" value="$(find oak_interface)/resources/mobilenet-ssd_openvino_2021.2_6shave.blob" />
 
     <!-- Cameras parameters -->
@@ -47,6 +47,8 @@
     <param name="rgb_camera_resolution" type="int"    value="1080"  /> <!-- 1080, 3840 (4K), 2826 (12MP) -->
     <param name="rgb_camera_fps"        type="double" value="40.0" />  <!-- Max 60-->
 
+    <!-- IMU -->
+    <param name="publish_imu"       type="bool" value="true" />
 
     <!-- Node -->
     <node name="oak" pkg="oak_interface" type="oak" output="screen" required="true">
@@ -72,6 +74,8 @@
 
         <remap from="/detections_images"    to="/oak/detections/image"/>
         <remap from="/detections_depth"     to="/oak/detections/depth"/>
+
+        <remap from="Imu"        to="/oak/imu"/>
     
     </node>
 

@@ -11,6 +11,9 @@ void OakDTaskRGB::start(ros::NodeHandle& nh){
         ros::param::get("/camera_param_uri", camera_param_uri);
     }
 
+    if (ros::param::has("/publish_rgb_detections"))
+        ros::param::get("/publish_rgb_detections", interleaved);
+
     std::string color_uri = camera_param_uri + "/" + "color.yaml";
     
     // ROS
@@ -23,13 +26,14 @@ void OakDTaskRGB::start(ros::NodeHandle& nh){
 }
 
 void OakDTaskRGB::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                      OakQueueIndex& queue_index){
+                      OakQueueIndex& queue_index, std_msgs::Header header){
 
     rgb_frame = streams_queue[queue_index.inx_rgb]->tryGet<dai::ImgFrame>();
 
     if(!(rgb_frame == nullptr)){
         // Send image
-        OakDUtils::getRosMsg(rgb_frame,rgb_image_msg);
+        OakDUtils::getRosMsg(rgb_frame,rgb_image_msg, !interleaved);
+        rgb_image_msg.header.stamp = header.stamp;
         rgb_pub.publish(rgb_image_msg);
 
         // Send info

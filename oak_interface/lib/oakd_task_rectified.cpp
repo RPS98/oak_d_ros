@@ -30,13 +30,14 @@ void OakDTaskRectified::start(ros::NodeHandle& nh){
 }
 
 void OakDTaskRectified::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                      OakQueueIndex& queue_index){
+                      OakQueueIndex& queue_index, std_msgs::Header header){
 
     left_rectified_frame = streams_queue[queue_index.inx_rectified_left]->tryGet<dai::ImgFrame>();
 
     if(!(left_rectified_frame == nullptr)){
         // Send image
-        OakDUtils::getRosMsg(left_rectified_frame,left_rectified_image_msg);
+        OakDUtils::getRosMsg(left_rectified_frame,left_rectified_image_msg, true);
+        left_rectified_image_msg.header.stamp = header.stamp;
         left_rectified_pub.publish(left_rectified_image_msg);
 
         // Send info
@@ -50,7 +51,8 @@ void OakDTaskRectified::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& 
 
     if(!(right_rectified_frame == nullptr)){
         // Send image
-        OakDUtils::getRosMsg(right_rectified_frame,right_rectified_image_msg);
+        OakDUtils::getRosMsg(right_rectified_frame,right_rectified_image_msg, true);
+        right_rectified_image_msg.header.stamp = header.stamp;
         right_rectified_pub.publish(right_rectified_image_msg);
 
         // Send info
