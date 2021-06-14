@@ -8,8 +8,9 @@
 #include "oakd_task_depth.hpp"
 #include "oakd_task_rectified.hpp"
 #include "oakd_task_rgb.hpp"
-#include "oakd_task_detections.hpp"
+#include "oakd_task_rgb_detections.hpp"
 #include "oakd_task_imu.hpp"
+#include "oakd_task_stereo_detections.hpp"
 
 class OakDInterface : public OakDProcess
 {

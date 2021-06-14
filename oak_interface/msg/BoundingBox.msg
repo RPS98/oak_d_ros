@@ -5,4 +5,5 @@ int64 ymin
 int64 xmax
 int64 ymax
 float64 depth
-
+float64 x_centroid
+float64 y_centroid

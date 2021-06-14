@@ -1,11 +1,11 @@
-#include <oak_interface/oakd_task_detections.hpp>
+#include <oak_interface/oakd_task_rgb_detections.hpp>
 
-const std::vector<std::string> OakDTaskDetections::label_map = {"background",  "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",   "car",  "cat",   "chair",    "cow",
+const std::vector<std::string> OakDTaskRGBDetections::label_map = {"background",  "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",   "car",  "cat",   "chair",    "cow",
                                   "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"}; 
 
-void OakDTaskDetections::start(ros::NodeHandle& nh){
+void OakDTaskRGBDetections::start(ros::NodeHandle& nh){
     
-    std::cout << "Starting OakDTaskDetections" << std::endl;
+    std::cout << "Starting OakDTaskRGBDetections" << std::endl;
 
     std::string deviceName = "oak";
     std::string camera_param_uri = "package://oak_interface/params/camera";
@@ -49,14 +49,14 @@ void OakDTaskDetections::start(ros::NodeHandle& nh){
         
 };
 
-void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
+void OakDTaskRGBDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
                       OakQueueIndex& queue_index, std_msgs::Header header){
     
     using namespace std::chrono;
-    // std::cout << "Running OakDTaskDetections" << std::endl;
+    // std::cout << "Running OakDTaskRGBDetections" << std::endl;
 
     imgFrame = streams_queue[queue_index.inx_rgb]->get<dai::ImgFrame>();
-    det = streams_queue[queue_index.inx_detections]->get<dai::SpatialImgDetections>();
+    det = streams_queue[queue_index.inx_rgb_detections]->get<dai::SpatialImgDetections>();
     depth = streams_queue[queue_index.inx_depth]->get<dai::ImgFrame>();
 
     //OakDUtils utils;
@@ -130,8 +130,9 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
         bbox.ymin = (int)y1;
         bbox.xmax = (int)x2;
         bbox.ymax = (int)y2;
-        bbox.depth = (float)d.spatialCoordinates.z;
-
+        bbox.depth = (float)d.spatialCoordinates.z;      // mm
+        bbox.x_centroid = (float)d.spatialCoordinates.x; // mm
+        bbox.y_centroid = (float)d.spatialCoordinates.y; // mm
         msg.bounding_boxes.push_back(bbox);
 
     }
@@ -175,7 +176,7 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
 
 };
 
-void OakDTaskDetections::stop(){
+void OakDTaskRGBDetections::stop(){
     detections_pub.shutdown();
     image_detections_pub.shutdown();
     depth_pub.shutdown();

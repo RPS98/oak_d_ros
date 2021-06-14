@@ -32,20 +32,24 @@ void OakDTaskIMU::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& stream
         imu_msg.orientation.y = imuPacket.rotationVector.j;
         imu_msg.orientation.z = imuPacket.rotationVector.k;
         imu_msg.orientation.w = imuPacket.rotationVector.real;
-
+        imu_msg.orientation_covariance = {0.1,0,0,
+                                          0,0.1,0,
+                                          0,0,0.1}; //THIS IS INVENTED, NEEDS TO BE CALCULATED
         //Velocidad angular en rad/s
         imu_msg.angular_velocity.x = imuPacket.gyroscope.x;
         imu_msg.angular_velocity.y = imuPacket.gyroscope.y;
         imu_msg.angular_velocity.z = imuPacket.gyroscope.z;
-        //Falta la matriz de covarianza de la velocidad angular (no puede ser 0)
-        //imu_msg.angular_velocity_orientation_covariance = {0,0,0,0,0,0,0,0,0};
+        imu_msg.angular_velocity_covariance = {0.0072255522344464793,0,0,
+                                               0,0.0061319799724541104,0,
+                                               0,0,0.0081724950866878237};
 
         //Aceleración lineal en m/s²
         imu_msg.linear_acceleration.x = imuPacket.acceleroMeter.x;
         imu_msg.linear_acceleration.y = imuPacket.acceleroMeter.y;
         imu_msg.linear_acceleration.z = imuPacket.acceleroMeter.z;
-        //Falta la matriz de covarianza de la aceleración lineal (no puede ser 0)
-        //msg.linear_acceleration_covariance = {0,0,0,0,0,0,0,0,0};
+        imu_msg.linear_acceleration_covariance = {0.027129571855099233,0,0,
+                                              0,0.025032181819875311,0,
+                                              0,0,0.028286689365978803};
 
         // imu_msg.header.stamp = ros::Time::now();
         imu_msg.header.stamp = header.stamp;

@@ -1,13 +1,13 @@
-#ifndef OAKD_TASK_DETECTIONS
-#define OAKD_TASK_DETECTIONS
+#ifndef OAKD_TASK_RGB_DETECTIONS
+#define OAKD_TASK_RGB_DETECTIONS
 
 #include "oakd_task.hpp"
 
-class OakDTaskDetections : public OakDTask
+class OakDTaskRGBDetections : public OakDTask
 {
 public:
-    OakDTaskDetections() = default;
-    ~OakDTaskDetections() = default;
+    OakDTaskRGBDetections() = default;
+    ~OakDTaskRGBDetections() = default;
 
 public: // OakDTask
     void start(ros::NodeHandle& nh);

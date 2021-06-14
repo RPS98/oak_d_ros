@@ -30,8 +30,8 @@
 
 
     <!-- Cameras used -->
-    <param name="publish_mono"      type="bool" value="true" />
-    <param name="publish_depth"     type="bool" value="true" />
+    <param name="publish_mono"      type="bool" value="false" />
+    <param name="publish_depth"     type="bool" value="false" />
     <param name="publish_rectified" type="bool" value="false" />
     <param name="publish_rgb"       type="bool" value="false" />
 
@@ -46,8 +46,8 @@
     <param name="publish_imu"       type="bool" value="true" />
 
     <!-- Neural Network -->
-    <param name="publish_detections" type="bool" value="false" />
-    <param name="publish_stereo_neural_inference" type="bool" value="false" /> 
+    <param name="publish_rgb_detections" type="bool" value="false" />
+    <param name="publish_stereo_detections" type="bool" value="true" /> 
     <param name="nnBlobPath"         type="string" value="$(find oak_interface)/resources/mobilenet-ssd_openvino_2021.2_6shave.blob" />
 
     <!-- Node -->

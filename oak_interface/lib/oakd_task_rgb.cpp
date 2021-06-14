@@ -11,8 +11,8 @@ void OakDTaskRGB::start(ros::NodeHandle& nh){
         ros::param::get("/camera_param_uri", camera_param_uri);
     }
 
-    if (ros::param::has("/publish_detections"))
-        ros::param::get("/publish_detections", interleaved);
+    if (ros::param::has("/publish_rgb_detections"))
+        ros::param::get("/publish_rgb_detections", interleaved);
 
     std::string color_uri = camera_param_uri + "/" + "color.yaml";
     
