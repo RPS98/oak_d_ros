@@ -41,6 +41,7 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
     imgFrame = streams_queue[queue_index.inx_rgb]->get<dai::ImgFrame>();
     det = streams_queue[queue_index.inx_detections]->get<dai::SpatialImgDetections>();
     depth = streams_queue[queue_index.inx_depth]->get<dai::ImgFrame>();
+    auto video = streams_queue[queue_index.inx_video]->get<dai::ImgFrame>();
 
     //OakDUtils utils;
 
@@ -78,6 +79,7 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
     }
 
     cv::Mat frame = OakDUtils::getCvFrame(imgFrame); // imgFrame->getCvFrame();
+    cv::Mat frame_video = OakDUtils::getCvFrame(video);
 
     for(const auto& d : dets) {
         int x1 = d.xmin * frame.cols;
@@ -124,24 +126,29 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
     std::stringstream fpsStr;
     fpsStr << std::fixed << std::setprecision(2) << fps_;
     cv::putText(frame, fpsStr.str(), cv::Point(2, imgFrame->getHeight() - 4), cv::FONT_HERSHEY_TRIPLEX, 0.4, color_);
-    //cv::imshow("depth", depthFrameColor);
-    //cv::imshow("preview", frame);
-
+    cv::imshow("depth", depthFrameColor);
+    cv::imshow("preview", frame);
+    cv::imshow("video", frame_video);
+    cv::waitKey(1);
+    
     // From cv::Mat to cv_bridge::CvImage 
     std_msgs::Header header;
     cv_bridge::CvImage frame_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, frame);
-    cv_bridge::CvImage depth_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, depthFrameColor);
+    cv_bridge::CvImage video_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, frame_video);
+    //cv_bridge::CvImage depth_cv_bridge = cv_bridge::CvImage(header,sensor_msgs::image_encodings::BGR8, depthFrameColor);
 
     // From cv_bridge::CvImage to sensor_msgs::Image
     frame_cv_bridge.toImageMsg(frame_msg);
-    depth_cv_bridge.toImageMsg(frame_depth_msg);
+    video_cv_bridge.toImageMsg(frame_depth_msg);
+    //depth_cv_bridge.toImageMsg(frame_depth_msg);
 
     // Publishing the image with detections in the topic "/detections_images"
     image_detections_pub.publish(frame_msg);
     depth_pub.publish(frame_depth_msg);
+    //depth_pub.publish(frame_depth_msg);
 
     // Publishing the info of detections in the topic "/detections"
-    detections_pub.publish(msg);
+    detections_pub.publish(msg); 
     msg.bounding_boxes.clear();
 
 };

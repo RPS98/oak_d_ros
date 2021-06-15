@@ -40,6 +40,7 @@ void OakDPipeline::start(OakUseList& use_list,
     std::shared_ptr<dai::node::XLinkOut> nnLeftOut = nullptr;
     std::shared_ptr<dai::node::XLinkOut> xoutManipRight = nullptr;
     std::shared_ptr<dai::node::XLinkOut> xoutManipLeft = nullptr;
+    std::shared_ptr<dai::node::XLinkOut> video = nullptr;
 
     // Mono Camera
     if(use_list.use_mono){
@@ -123,14 +124,16 @@ void OakDPipeline::start(OakUseList& use_list,
             monoRight->out.link(stereo->right);
             
             // Link plugins CAM -> STEREO -> XLINK
-            stereo->depth.link(xoutDepth->input); // RAW16 encoded (0..65535) depth data in millimeters
-            
+            if(!use_list.use_detections){
+                stereo->depth.link(xoutDepth->input); // RAW16 encoded (0..65535) depth data in millimeters
+            }
             //stereo->disparity.link(xoutDepth->input);   // RAW8 / RAW16 encoded disparity data
             //stereo->syncedLeft.link(xoutLeft->input);  // Passthrough ImgFrame message from ‘left’ Input
             //stereo->syncedRight.link(xoutRight->input); // Passthrough ImgFrame message from right Input
 
             // Data from device to host via XLink
             xoutDepth->setStreamName("depth");
+            
 
             // Rectified Images
             // If use rectified
@@ -156,6 +159,7 @@ void OakDPipeline::start(OakUseList& use_list,
     if(use_list.use_rgb){
         // XLinkOut
         xoutRGB = pipeline_.create<dai::node::XLinkOut>();
+        video = pipeline_.create<dai::node::XLinkOut>();
 
         // Parameters
         int rgb_camera_resolution = 1080;
@@ -204,6 +208,7 @@ void OakDPipeline::start(OakUseList& use_list,
         if(!use_list.use_detections) {
             colorCam->preview.link(xoutRGB->input); // BGR/RGB planar/interleaved encoded
         }
+        colorCam->video.link(video->input);
          
         //colorCam->video.link(xoutRGB->input); // NV12 encoded (YUV420, UV plane interleaved)
         //colorCam->still.link(xoutRGB->input); // NV12 encoded (YUV420, UV plane interleaved) when inputControl
@@ -212,6 +217,7 @@ void OakDPipeline::start(OakUseList& use_list,
 
         // Data from device to host via XLink
         xoutRGB->setStreamName("rgb");
+        video->setStreamName("video");
     }
 
     // Spatial Detection Network
@@ -341,12 +347,14 @@ void OakDPipeline::start(OakUseList& use_list,
     if(use_list.use_rgb){
         streams_queue.push_back(dev_->getOutputQueue("rgb", queueSize, true));
         queue_index.inx_rgb = counter; counter++;
+        streams_queue.push_back(dev_->getOutputQueue("video", queueSize, false));
+        queue_index.inx_video = counter; counter++;
     }
     if(use_list.use_detections){
         streams_queue.push_back(dev_->getOutputQueue("detections", queueSize, false));
         queue_index.inx_detections = counter; counter++; 
         streams_queue.push_back(dev_->getOutputQueue("boundingBoxDepthMapping", queueSize, false));
-        queue_index.inx_bbDepthMapping = counter; counter++; 
+        queue_index.inx_bbDepthMapping = counter; counter++;
     }
     if(use_list.use_stereo_neural_inference){
         streams_queue.push_back(dev_->getOutputQueue("detections_right", queueSize, false));

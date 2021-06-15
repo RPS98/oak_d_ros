@@ -107,7 +107,8 @@ void OakDInterface::create_use_list(OakUseList& use_list, OakPublishList& publis
         use_list.use_mono = true;
         use_list.use_depth = true;
         use_list.use_rectified = true;
-        use_list.use_stereo_neural_inference = true; 
+        use_list.use_stereo_neural_inference = true;
+        use_list.use_rgb = true;
     }
 
 }

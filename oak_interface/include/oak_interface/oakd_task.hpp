@@ -37,6 +37,7 @@ struct OakQueueIndex
     // OakDTaskDetections
     int inx_detections = -1;
     int inx_bbDepthMapping = -1;
+    int inx_video = -1;
     // OakDTaskStereoNeuralInference
     int inx_detections_right = -1;
     int inx_detections_left = -1;

@@ -61,6 +61,7 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
     left = streams_queue[queue_index.inx_imgManip_left]->get<dai::ImgFrame>();
     det_right = streams_queue[queue_index.inx_detections_right]->get<dai::ImgDetections>();
     det_left = streams_queue[queue_index.inx_detections_left]->get<dai::ImgDetections>();
+    //auto video = streams_queue[queue_index.inx_video]->get<dai::ImgFrame>();
     
     auto dets_right = det_right->detections;
     auto dets_left = det_left->detections;
@@ -78,6 +79,7 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
      
     cv::Mat frame_right = OakDUtils::getCvFrame(right);
     cv::Mat frame_rectified_right = OakDUtils::getCvFrame(rectified_right);
+    //cv::Mat frame_video = OakDUtils::getCvFrame(video);
 
     // Test for knowing what setResize function actually performs
     /*cv::Rect crop_region(240,0,800,800);
@@ -458,8 +460,9 @@ void OakDTaskStereoNeuralInference::run(std::vector<std::shared_ptr<dai::DataOut
     cv::putText(frame_rectified_right, fpsStr.str(), cv::Point(2, right->getHeight() - 4), cv::FONT_HERSHEY_TRIPLEX, 0.4, color_);
     cv::putText(frame_rectified_left, fpsStr.str(), cv::Point(2, left->getHeight() - 4), cv::FONT_HERSHEY_TRIPLEX, 0.4, color_);
 
-    cv::imshow("rectified_right_dets", frame_rectified_right);
-    cv::imshow("rectified_left_dets", frame_rectified_left);
+    //cv::imshow("rectified_right_dets", frame_rectified_right);
+    //cv::imshow("rectified_left_dets", frame_rectified_left);
+    //cv::imshow("video", frame_video);
     cv::waitKey(1);
 
     //cv::imshow("depth", depthFrameColor);
