@@ -30,7 +30,7 @@ void OakDTaskRectified::start(ros::NodeHandle& nh){
 }
 
 void OakDTaskRectified::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                      OakQueueIndex& queue_index){
+                      OakQueueIndex& queue_index, std_msgs::Header header){
 
     left_rectified_frame = streams_queue[queue_index.inx_rectified_left]->tryGet<dai::ImgFrame>();
 
@@ -41,7 +41,7 @@ void OakDTaskRectified::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& 
 
         // Send info
         left_rectified_CameraInfo.header.seq = left_rectified_frame->getSequenceNum();
-        left_rectified_CameraInfo.header.stamp = ros::Time::now();
+        left_rectified_CameraInfo.header.stamp = header.stamp;
         left_rectified_info_pub.publish(left_rectified_CameraInfo);
 
     } 
@@ -55,7 +55,7 @@ void OakDTaskRectified::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& 
 
         // Send info
         right_rectified_CameraInfo.header.seq = right_rectified_frame->getSequenceNum();
-        right_rectified_CameraInfo.header.stamp = ros::Time::now();
+        right_rectified_CameraInfo.header.stamp = header.stamp;
         right_rectified_info_pub.publish(right_rectified_CameraInfo);
     } 
 }

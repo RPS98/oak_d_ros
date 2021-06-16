@@ -31,7 +31,7 @@ void OakDTaskMono::start(ros::NodeHandle& nh){
 }
 
 void OakDTaskMono::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                       OakQueueIndex& queue_index){
+                       OakQueueIndex& queue_index, std_msgs::Header header){
 
     left_frame = streams_queue[queue_index.inx_mono_left]->tryGet<dai::ImgFrame>();
     if(!(left_frame == nullptr)){
@@ -41,7 +41,7 @@ void OakDTaskMono::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& strea
 
         // Send info
         left_CameraInfo.header.seq = left_frame->getSequenceNum();
-        left_CameraInfo.header.stamp = ros::Time::now();
+        left_CameraInfo.header.stamp = header.stamp;
         left_info_pub.publish(left_CameraInfo);
     } 
 
@@ -53,7 +53,7 @@ void OakDTaskMono::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& strea
 
         // Send info
         right_CameraInfo.header.seq = right_frame->getSequenceNum();
-        right_CameraInfo.header.stamp = ros::Time::now();
+        right_CameraInfo.header.stamp = header.stamp;
         right_info_pub.publish(right_CameraInfo);
     }
 }

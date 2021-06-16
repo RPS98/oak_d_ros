@@ -12,12 +12,13 @@ public:
 public:
     void start(ros::NodeHandle& nh);
     void run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-             OakQueueIndex& queue_index);
+             OakQueueIndex& queue_index, std_msgs::Header header);
     void stop();
 
 private:
     sensor_msgs::Imu imu_msg;
     std::shared_ptr<dai::IMUData> imu_queue;
+    std::vector<dai::IMUPacket> imuPackets;
 
     //ROS Publisher
     ros::Publisher imu_pub;

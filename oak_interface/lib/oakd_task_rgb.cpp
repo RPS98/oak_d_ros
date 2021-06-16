@@ -23,7 +23,7 @@ void OakDTaskRGB::start(ros::NodeHandle& nh){
 }
 
 void OakDTaskRGB::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                      OakQueueIndex& queue_index){
+                      OakQueueIndex& queue_index, std_msgs::Header header){
 
     rgb_frame = streams_queue[queue_index.inx_rgb]->tryGet<dai::ImgFrame>();
 
@@ -34,9 +34,9 @@ void OakDTaskRGB::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& stream
 
         // Send info
         rgb_CameraInfo.header.seq = rgb_frame->getSequenceNum();
-        rgb_CameraInfo.header.stamp = ros::Time::now();
+        rgb_CameraInfo.header.stamp = header.stamp;
         rgb_info_pub.publish(rgb_CameraInfo);    
-    }
+    } 
 
 }
 

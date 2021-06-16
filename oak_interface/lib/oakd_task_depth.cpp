@@ -23,7 +23,7 @@ void OakDTaskDepth::start(ros::NodeHandle& nh){
 }
 
 void OakDTaskDepth::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-                      OakQueueIndex& queue_index){
+                      OakQueueIndex& queue_index, std_msgs::Header header){
 
     depth_frame = streams_queue[queue_index.inx_depth]->tryGet<dai::ImgFrame>();
 
@@ -34,7 +34,7 @@ void OakDTaskDepth::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& stre
 
         // Send info
         depth_CameraInfo.header.seq = depth_frame->getSequenceNum();
-        depth_CameraInfo.header.stamp = ros::Time::now();
+        depth_CameraInfo.header.stamp = header.stamp;
         depth_info_pub.publish(depth_CameraInfo);
     }
 }

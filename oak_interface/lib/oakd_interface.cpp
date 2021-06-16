@@ -1,7 +1,7 @@
 #include <oak_interface/oakd_interface.hpp>
 
 void OakDInterface::ownSetUp(){
-    // List of information that must be publish from params
+    // List of information that must be published from params
     OakPublishList publish_list; 
     read_param(publish_list);
 
@@ -31,6 +31,9 @@ void OakDInterface::ownSetUp(){
     if(publish_list.publish_imu){
         tasks_list_.push_back(new OakDTaskIMU());
     }
+    if(publish_list.publish_stereo_neural_inference){
+        tasks_list_.push_back(new OakDTaskStereoNeuralInference());
+    }    
 
     oakd_pipeline.start(use_list, streams_queue_, queue_index_);
 }
@@ -42,9 +45,12 @@ void OakDInterface::ownStart(){
 }
 
 void OakDInterface::ownRun(){
+    header.stamp = ros::Time::now();
+    header.seq = seq;
     for(auto task:tasks_list_){
-        task->run(streams_queue_, queue_index_);
+        task->run(streams_queue_, queue_index_, header);
     }
+    seq = seq + 1;
 }
 
 void OakDInterface::ownStop(){
@@ -53,9 +59,10 @@ void OakDInterface::ownStop(){
     }
 }
 
+// G: This function reads params from the launch file and stores them in variables of the struct OakPublishList
 void OakDInterface::read_param(OakPublishList& publish_list){
 
-    // List of publish topics
+    // List of publishers
     if (ros::param::has("/publish_mono"))
         ros::param::get("/publish_mono", publish_list.publish_mono);
 
@@ -72,9 +79,13 @@ void OakDInterface::read_param(OakPublishList& publish_list){
         ros::param::get("/publish_detections", publish_list.publish_detections);
 
     if (ros::param::has("/publish_imu"))
-    ros::param::get("/publish_imu", publish_list.publish_imu);
+        ros::param::get("/publish_imu", publish_list.publish_imu);
+
+    if (ros::param::has("/publish_stereo_neural_inference"))
+        ros::param::get("/publish_stereo_neural_inference", publish_list.publish_stereo_neural_inference);
 }
 
+// G: This function reads params from the launch file and stores them in order to know what nodes are necessary to define the pipeline
 void OakDInterface::create_use_list(OakUseList& use_list, OakPublishList& publish_list){
 
 
@@ -93,13 +104,22 @@ void OakDInterface::create_use_list(OakUseList& use_list, OakPublishList& publis
     if(publish_list.publish_rgb){
         use_list.use_rgb = true;
     }
-    if(publish_list.publish_detections){
+    if(publish_list.publish_imu){
+        use_list.use_imu = true;
+    }
+    // OakDTaskDetections and OakDTaskStereoNeuralInference can't be used at the same time
+    if((publish_list.publish_detections == true) && (publish_list.publish_stereo_neural_inference == false)){
         use_list.use_mono = true;
         use_list.use_depth = true;     
         use_list.use_rgb = true;
         use_list.use_detections = true; 
     }
-    if(publish_list.publish_imu){
-        use_list.use_imu = true;
+    if((publish_list.publish_detections == false) && (publish_list.publish_stereo_neural_inference == true)){
+        use_list.use_mono = true;
+        use_list.use_depth = true;
+        use_list.use_rectified = true;
+        use_list.use_stereo_neural_inference = true;
+        use_list.use_rgb = true;
     }
+
 }

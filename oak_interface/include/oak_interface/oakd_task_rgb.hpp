@@ -12,7 +12,7 @@ public:
 public: // OakDTask
     void start(ros::NodeHandle& nh);
     void run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue, 
-             OakQueueIndex& queue_index);
+             OakQueueIndex& queue_index, std_msgs::Header header);
     void stop();
 
 private:
