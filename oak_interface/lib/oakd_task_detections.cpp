@@ -99,13 +99,13 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
         cv::putText(frame, confStr.str(), cv::Point(x1 + 10, y1 + 35), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
 
         std::stringstream depthX;
-        depthX << "X: " << (int)d.spatialCoordinates.x << " mm";
+        depthX << "X: " << (int)d.spatialCoordinates.x/1000 << " m";
         cv::putText(frame, depthX.str(), cv::Point(x1 + 10, y1 + 50), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
         std::stringstream depthY;
-        depthY << "Y: " << (int)d.spatialCoordinates.y << " mm";
+        depthY << "Y: " << (int)d.spatialCoordinates.y/1000 << " m";
         cv::putText(frame, depthY.str(), cv::Point(x1 + 10, y1 + 65), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
         std::stringstream depthZ;
-        depthZ << "Z: " << (int)d.spatialCoordinates.z << " mm";
+        depthZ << "Z: " << (int)d.spatialCoordinates.z/1000 << " m";
         cv::putText(frame, depthZ.str(), cv::Point(x1 + 10, y1 + 80), cv::FONT_HERSHEY_TRIPLEX, 0.5, color_);
 
         cv::rectangle(frame, cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)), color_, cv::FONT_HERSHEY_SIMPLEX);
@@ -116,9 +116,9 @@ void OakDTaskDetections::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>&
         bbox.ymin = (int)y1;
         bbox.xmax = (int)x2;
         bbox.ymax = (int)y2;
-        bbox.depth = (float)d.spatialCoordinates.z;
-        bbox.x_centroid = (float)d.spatialCoordinates.x;
-        bbox.y_centroid = (float)d.spatialCoordinates.y;
+        bbox.depth = (float)d.spatialCoordinates.z/1000;
+        bbox.x_centroid = (float)d.spatialCoordinates.x/1000;
+        bbox.y_centroid = (float)d.spatialCoordinates.y/1000;
         msg.header.stamp = header.stamp;
 
         msg.bounding_boxes.push_back(bbox);
