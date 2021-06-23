@@ -19,7 +19,7 @@ namespace dai::rosBridge {
             {dai::RawImgFrame::Type::RGB888i        , "rgb8"                 },
             {dai::RawImgFrame::Type::BGR888i        , "bgr8"                 },
             {dai::RawImgFrame::Type::GRAY8          , "mono8"                },
-            {dai::RawImgFrame::Type::RAW8           , "8UC1"                 },
+            {dai::RawImgFrame::Type::RAW8           , "mono8"                 },
             {dai::RawImgFrame::Type::RAW16          , "16UC1"                },
             // {dai::RawImgFrame::Type::NV12           : "CV_bridge" },
         };
@@ -65,7 +65,7 @@ void ImageConverter::toRosMsg(std::shared_ptr<dai::ImgFrame> inData,
 
   outImageMsg.header.seq = inData->getSequenceNum();
   outImageMsg.header.stamp = ros::Time(sec, nsec);
-  outImageMsg.header.frame_id = _frameName;
+  //outImageMsg.header.frame_id = _frameName;
     
   if (!_daiInterleaved) {
 

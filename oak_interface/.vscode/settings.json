@@ -1,14 +1,16 @@
 {
     "python.autoComplete.extraPaths": [
-        "/home/rafa/workspace/ros/aerostack_catkin_ws/devel/lib/python2.7/dist-packages",
+        "/home/rafa/practicas_ws/devel/lib/python2.7/dist-packages",
+        "/opt/ros/melodic/lib/python2.7/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/rafa/practicas_ws/devel/lib/python2.7/dist-packages",
         "/opt/ros/melodic/lib/python2.7/dist-packages"
     ],
     "files.associations": {
-        "stdexcept": "cpp",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
-        "csignal": "cpp",
         "cstdarg": "cpp",
         "cstddef": "cpp",
         "cstdio": "cpp",
@@ -23,7 +25,6 @@
         "*.tcc": "cpp",
         "bitset": "cpp",
         "chrono": "cpp",
-        "codecvt": "cpp",
         "complex": "cpp",
         "condition_variable": "cpp",
         "cstdint": "cpp",
@@ -53,7 +54,6 @@
         "hash_map": "cpp",
         "hash_set": "cpp",
         "fstream": "cpp",
-        "future": "cpp",
         "initializer_list": "cpp",
         "iomanip": "cpp",
         "iosfwd": "cpp",
@@ -64,16 +64,12 @@
         "new": "cpp",
         "ostream": "cpp",
         "sstream": "cpp",
+        "stdexcept": "cpp",
         "streambuf": "cpp",
         "thread": "cpp",
         "cfenv": "cpp",
         "cinttypes": "cpp",
         "typeindex": "cpp",
-        "typeinfo": "cpp",
-        "*.ipp": "cpp"
-    },
-    "python.analysis.extraPaths": [
-        "/home/rafa/workspace/ros/aerostack_catkin_ws/devel/lib/python2.7/dist-packages",
-        "/opt/ros/melodic/lib/python2.7/dist-packages"
-    ]
+        "typeinfo": "cpp"
+    }
 }

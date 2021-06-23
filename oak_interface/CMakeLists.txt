@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   cv_bridge
   message_filters
+  message_generation # new
 )
 
 set(_opencv_version 4)
@@ -27,6 +28,17 @@ if(NOT OpenCV_FOUND)
 endif()
 find_package(depthai REQUIRED)
 
+
+add_message_files(
+  FILES
+  BoundingBox.msg #new
+  BoundingBoxes.msg #new
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -120,7 +132,7 @@ find_package(depthai REQUIRED)
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES ${PROJECT_NAME}
- CATKIN_DEPENDS roscpp sensor_msgs std_msgs camera_info_manager cv_bridge message_filters
+ CATKIN_DEPENDS roscpp sensor_msgs std_msgs camera_info_manager cv_bridge message_filters message_runtime #new
  DEPENDS
  OpenCV
  )
@@ -244,6 +256,18 @@ target_link_libraries(${PROJECT_NAME}
 #add_dependencies(oak_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} )
 #target_link_libraries(oak_interface ${catkin_LIBRARIES} ${OpenCV_LIBS} depthai::core)
 
+set(mobilenet_blob "${PROJECT_SOURCE_DIR}/resources/mobilenet-ssd_openvino_2021.2_6shave.blob")
+file(DOWNLOAD "https://artifacts.luxonis.com/artifactory/luxonis-depthai-data-local/network/mobilenet-ssd_openvino_2021.2_6shave.blob" 
+${mobilenet_blob}
+TIMEOUT 60  # seconds
+EXPECTED_HASH SHA1=f0e14978b3f77a4f93b9f969cd39e58bb7aef490
+TLS_VERIFY ON)
+
+message("-----------------------------------------------mobilenet_blob-------------------------")
+message(mobilenet_blob)
+
+
+
 macro(dai_add_node node_name node_src)
     add_executable("${node_name}" "${node_src}")
     
@@ -264,3 +288,6 @@ macro(dai_add_node node_name node_src)
 endmacro() 
 
 dai_add_node(oak src/oak.cpp)
+
+target_compile_definitions(oak PRIVATE BLOB_PATH="${mobilenet_blob}") # new
+

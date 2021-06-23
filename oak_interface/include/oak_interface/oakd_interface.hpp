@@ -7,8 +7,10 @@
 #include "oakd_task_mono.hpp"
 #include "oakd_task_depth.hpp"
 #include "oakd_task_rectified.hpp"
-#include "oakd_task_rgb.hpp"
-#include "oakd_task_detections.hpp"
+#include "oakd_task_color.hpp"
+#include "oakd_task_imu.hpp"
+#include "oakd_task_color_neural_inference.hpp"
+#include "oakd_task_stereo_neural_inference.hpp"
 
 class OakDInterface : public OakDProcess
 {
@@ -35,6 +37,9 @@ private:
     // Start functions
     void read_param(OakPublishList& publish_list);
     void create_use_list(OakUseList& use_list, OakPublishList& publish_list);
+
+    int seq = 1;
+    std_msgs::Header header;
 };
 
 #endif

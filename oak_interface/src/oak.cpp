@@ -13,8 +13,8 @@ int main(int argc, char** argv){
 
     oakd_interface.setUp();
     oakd_interface.start();
-
-    ros::Rate loop_rate(200); // Frequency in Hz
+    ros::Duration(3).sleep();
+    ros::Rate loop_rate(240); // Frequency in Hz
     while(ros::ok()){   
         oakd_interface.run();
         ros::spinOnce();

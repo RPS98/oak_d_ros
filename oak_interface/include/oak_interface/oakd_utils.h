@@ -3,6 +3,7 @@
 
 #include "oakd_main.h"
 
+
 class OakDUtils
 {
 public:
@@ -13,17 +14,16 @@ public:
     
     // From Dai-bridge: From dai::ImgFrame to sensor_msgs::Image
     static void planarToInterleaved(const std::vector<uint8_t> &srcData,
-                            std::vector<uint8_t> &destData, int w,
-                            int h, int numPlanes, int bpp);
+                                    std::vector<uint8_t> &destData, int w,
+                                    int h, int numPlanes, int bpp);
+
+    static void interleavedToPlanar(const std::vector<uint8_t> &srcData,
+                                    std::vector<uint8_t> &destData, int w,
+                                    int h, int numPlanes, int bpp);
 
     static void getRosMsg(std::shared_ptr<dai::ImgFrame> inData,
-                sensor_msgs::Image &outImageMsg);
-
-    // Own functions: From dai::ImgFrame to cv::Mat to sensor_msgs::Image
-    static cv::Mat imgframe_to_mat(std::shared_ptr<dai::ImgFrame> frame, int data_type);
-
-    static sensor_msgs::Image dai_to_ros(std_msgs::Header header,
-                                std::shared_ptr<dai::ImgFrame> frame);
+                         sensor_msgs::Image &outImageMsg, 
+                         bool daiInterleaved);
 
 };
 
