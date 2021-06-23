@@ -47,8 +47,8 @@ void OakDTaskIMU::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& stream
         //Falta la matriz de covarianza de la aceleración lineal (no puede ser 0)
         //msg.linear_acceleration_covariance = {0,0,0,0,0,0,0,0,0};
 
-        // imu_msg.header.stamp = ros::Time::now();
-        imu_msg.header.stamp = header.stamp;
+        imu_msg.header.stamp = ros::Time::now();
+        // imu_msg.header.stamp = header.stamp;
         imu_pub.publish(imu_msg);
     }                             
 };
