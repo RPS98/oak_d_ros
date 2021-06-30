@@ -18,22 +18,9 @@ public:
 private:
     sensor_msgs::Imu imu_msg;
     std::shared_ptr<dai::IMUData> imu_queue;
-    std::vector<dai::IMUPacket> imuPackets;
 
     //ROS Publisher
     ros::Publisher imu_pub;
-
-    //Otras variables
-
-    //Descomentar si necesitamos el tiempo
-    //  std::chrono::_V2::steady_clock::time_point baseTs;
-    //  std::chrono::_V2::steady_clock::time_point acceleroTs1;
-    //  std::chrono::_V2::steady_clock::time_point acceleroTs;
-    //  std::chrono::_V2::steady_clock::time_point gyroTs1;
-    //  std::chrono::_V2::steady_clock::time_point gyroTs;
-    //  std::chrono::_V2::steady_clock::time_point rvTs1;
-    //  std::chrono::_V2::steady_clock::time_point rvTs;
-    // int firstTs;
 };
 
 #endif

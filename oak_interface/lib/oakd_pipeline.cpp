@@ -4,7 +4,7 @@ void OakDPipeline::start(OakUseList& use_list,
                          std::vector<std::shared_ptr<dai::DataOutputQueue>>& streams_queue,
                          OakQueueIndex& queue_index){
     
-    // Delcaration of different nodes
+    // NODES DECLARATION
 
     // MonoCamera nodes
     std::shared_ptr<dai::node::MonoCamera> monoLeft = nullptr;
@@ -16,30 +16,42 @@ void OakDPipeline::start(OakUseList& use_list,
     // ColorCamera node
     std::shared_ptr<dai::node::ColorCamera> colorCam = nullptr;
 
-    // MobileNetSpatialDetectionNetwork node
-    std::shared_ptr<dai::node::MobileNetSpatialDetectionNetwork> spatialDetectionNetwork = nullptr;
+    // Imu node
+    std::shared_ptr<dai::node::IMU> imu = nullptr;
+
+    // MobileNetSpatialDetectionNetwork node for color neural inference
+    std::shared_ptr<dai::node::MobileNetSpatialDetectionNetwork> mobilenetSpatialDetectionNetwork_color = nullptr;
 
     // MobilenetDetectionNetwork nodes for stereo neural inference
     std::shared_ptr<dai::node::MobileNetDetectionNetwork> mobilenetDetectionNetwork_right = nullptr;
-    std::shared_ptr<dai::node::MobileNetDetectionNetwork> mobilenetDetectionNetwork_left = nullptr;
+    std::shared_ptr<dai::node::MobileNetDetectionNetwork> mobilenetDetectionNetwork_left  = nullptr;
 
     // ImagesManip nodes for stereo neural inference
     std::shared_ptr<dai::node::ImageManip> imageManip_right = nullptr;
-    std::shared_ptr<dai::node::ImageManip> imageManip_left = nullptr;
+    std::shared_ptr<dai::node::ImageManip> imageManip_left  = nullptr;
 
-    // XLinOut nodes
-    std::shared_ptr<dai::node::XLinkOut> xoutLeft = nullptr;
-    std::shared_ptr<dai::node::XLinkOut> xoutRight = nullptr;
-    std::shared_ptr<dai::node::XLinkOut> xoutDepth = nullptr;
-    std::shared_ptr<dai::node::XLinkOut> xoutRectifL = nullptr;
-    std::shared_ptr<dai::node::XLinkOut> xoutRectifR = nullptr;
-    std::shared_ptr<dai::node::XLinkOut> xoutRGB = nullptr;
-    std::shared_ptr<dai::node::XLinkOut> nnOut = nullptr;
+
+    // XLINKOUT DECLARATION
+
+    // XLinkOut nodes
+    std::shared_ptr<dai::node::XLinkOut> xoutLeft    = nullptr; // Left mono image
+    std::shared_ptr<dai::node::XLinkOut> xoutRight   = nullptr; // Right mono image
+    std::shared_ptr<dai::node::XLinkOut> xoutDepth   = nullptr; // Depth image
+    std::shared_ptr<dai::node::XLinkOut> xoutRectifL = nullptr; // Left mono image rectified
+    std::shared_ptr<dai::node::XLinkOut> xoutRectifR = nullptr; // Right mono image rectified
+    std::shared_ptr<dai::node::XLinkOut> xoutColor   = nullptr; // Color image
+    std::shared_ptr<dai::node::XLinkOut> xoutIMU     = nullptr; // IMU
+
+    // XLinkOut nodes for color neural inference
+    std::shared_ptr<dai::node::XLinkOut> nnColorOutDetections        = nullptr;
     std::shared_ptr<dai::node::XLinkOut> xoutBoundingBoxDepthMapping = nullptr;
-    std::shared_ptr<dai::node::XLinkOut> nnRightOut = nullptr;
-    std::shared_ptr<dai::node::XLinkOut> nnLeftOut = nullptr;
+
+    // XLinkOut nodes for stereo neural inference
+    std::shared_ptr<dai::node::XLinkOut> nnRightOut     = nullptr;
+    std::shared_ptr<dai::node::XLinkOut> nnLeftOut      = nullptr;
     std::shared_ptr<dai::node::XLinkOut> xoutManipRight = nullptr;
-    std::shared_ptr<dai::node::XLinkOut> xoutManipLeft = nullptr;
+    std::shared_ptr<dai::node::XLinkOut> xoutManipLeft  = nullptr;
+
     // Mono Camera
     if(use_list.use_mono){
         // XLinkOut
@@ -100,7 +112,16 @@ void OakDPipeline::start(OakUseList& use_list,
 
             //stereo->setInputResolution(int width, int height); (Optional if MonoCamera exists, otherwise necessary)
             if(!use_list.use_mono){
-                stereo->setInputResolution(1280, 800);
+                if(mono_camera_resolution == 720){
+                    stereo->setInputResolution(1280, 720);
+                } else if(mono_camera_resolution == 800){
+                    stereo->setInputResolution(1280, 800);
+                } else if(mono_camera_resolution == 400){
+                    stereo->setInputResolution(640, 480); 
+                } else {
+                    ROS_INFO_STREAM("Default mono camera resolution 720");
+                    stereo->setInputResolution(1280, 720);
+                }
             }
 
             //stereo->loadCalibrationFile(const std::string &path);
@@ -122,7 +143,7 @@ void OakDPipeline::start(OakUseList& use_list,
             monoRight->out.link(stereo->right);
             
             // Link plugins CAM -> STEREO -> XLINK
-            if(!use_list.use_rgb_detections){
+            if(!use_list.use_color_detections){
                 stereo->depth.link(xoutDepth->input); // RAW16 encoded (0..65535) depth data in millimeters
             }
             
@@ -148,17 +169,15 @@ void OakDPipeline::start(OakUseList& use_list,
                 xoutRectifL->setStreamName("rectified_left");
                 xoutRectifR->setStreamName("rectified_right");
             }
-
-            
         }
     }
 
     // IMU
     if(use_list.use_imu){
         // XLinkout
-        auto xoutIMU = pipeline_.create<dai::node::XLinkOut>();
+        xoutIMU = pipeline_.create<dai::node::XLinkOut>();
         // IMU node
-        auto imu = pipeline_.create<dai::node::IMU>();
+        imu = pipeline_.create<dai::node::IMU>();
         
         dai::IMUSensorConfig sensorConfig;
         // sensorConfig.reportIntervalUs = 2500; // 400 Hz (el maximo por ahora)
@@ -177,47 +196,61 @@ void OakDPipeline::start(OakUseList& use_list,
 
         // Data from device to host via XLink
         xoutIMU->setStreamName("imu");
-        }
+    }
 
-    // RGB Camera
-    if(use_list.use_rgb){
+    // Color  Camera
+    if(use_list.use_color){
         // XLinkOut
-        xoutRGB = pipeline_.create<dai::node::XLinkOut>();
+        xoutColor  = pipeline_.create<dai::node::XLinkOut>();
 
         // Parameters
-        int rgb_camera_resolution = 1080;
-        if (ros::param::has("/rgb_camera_resolution")) {
-            ros::param::get("/rgb_camera_resolution", rgb_camera_resolution);
+        int color_camera_resolution = 1080;
+        if (ros::param::has("/color_camera_resolution")) {
+            ros::param::get("/color_camera_resolution", color_camera_resolution);
         }
-        float rgb_camera_fps = 60.0;
-        if (ros::param::has("/rgb_camera_fps")) {
-            ros::param::get("/rgb_camera_fps", rgb_camera_fps);
+        float color_camera_fps = 60.0;
+        if (ros::param::has("/color_camera_fps")) {
+            ros::param::get("/color_camera_fps", color_camera_fps);
+        }
+        bool use_BGR = true;
+        if (ros::param::has("/use_BGR")) {
+            ros::param::get("/use_BGR", use_BGR);
         }
 
         // ColorCamera node
         colorCam = pipeline_.create<dai::node::ColorCamera>();
-        if(use_list.use_rgb_detections) {
-            colorCam->setPreviewSize(300, 300);
-        } else {
-            colorCam->setPreviewSize(1280, 720);
-        }
         colorCam->setBoardSocket(dai::CameraBoardSocket::RGB);
-        if(rgb_camera_resolution == 1080){
+
+        if(color_camera_resolution == 1080){
             colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_1080_P);
-        } else if(rgb_camera_resolution == 3840){
+            colorCam->setPreviewSize(1920, 1080);
+        } else if(color_camera_resolution == 3840){
             colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_4_K);
-        } else if(rgb_camera_resolution == 2826){
+            colorCam->setPreviewSize(3840, 2160);
+        } else if(color_camera_resolution == 2826){
             colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_12_MP);
+            colorCam->setPreviewSize(4247, 2826);
         } else {
-            ROS_INFO_STREAM("Default rgb camera resolution 720");
+            ROS_INFO_STREAM("Default color camera resolution 720");
             colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_1080_P);
+            colorCam->setPreviewSize(1920, 1080);
         }
-        //colorCam->setInterleaved(false); // Function getRosMsg do not support
-        colorCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::BGR);
-        colorCam->setFps(rgb_camera_fps);
+
+        if(use_BGR){
+            colorCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::BGR);
+        } else {
+            colorCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::RGB);
+        }
+
+        bool color_interleaved = true;
+        if (ros::param::has("/color_interleaved")) {
+            ros::param::get("/color_interleaved", color_interleaved);
+        }
+        colorCam->setInterleaved(color_interleaved);
+        
+        colorCam->setFps(color_camera_fps);
         // colorCam->setCamId(int64_t id);
         // colorCam->setImageOrientation(CameraImageOrientationimageOrientation);
-        // colorCam->setInterleaved(bool interleaved);
         // colorCam->setPreviewSize(int width, int height);
         // colorCam->setVideoSize(int width, int height);
         // colorCam->setStillSize(int width, int height);
@@ -225,61 +258,65 @@ void OakDPipeline::start(OakUseList& use_list,
         // colorCam->setPreviewKeepAspectRatio(bool keep);
 
         // Link plugins CAM -> STEREO -> XLINK
-        if(!use_list.use_rgb_detections) {
-            colorCam->preview.link(xoutRGB->input); // BGR/RGB planar/interleaved encoded
+        if(!use_list.use_color_detections){
+            colorCam->preview.link(xoutColor->input); // BGR/RGB planar/interleaved encoded
         }
-         
-        //colorCam->video.link(xoutRGB->input); // NV12 encoded (YUV420, UV plane interleaved)
-        //colorCam->still.link(xoutRGB->input); // NV12 encoded (YUV420, UV plane interleaved) when inputControl
-        //colorCam->isp.link(xoutRGB->input);   // YUV420 planar (I420/IYUV)
-        //colorCam->raw.link(xoutRGB->input);   // RAW10-packed (MIPI CSI-2 format)
+        //colorCam->video.link(xoutColor->input); // NV12 encoded (YUV420, UV plane interleaved)
+        //colorCam->still.link(xoutColor->input); // NV12 encoded (YUV420, UV plane interleaved) when inputControl
+        //colorCam->isp.link(xoutColor->input);   // YUV420 planar (I420/IYUV)
+        //colorCam->raw.link(xoutColor->input);   // RAW10-packed (MIPI CSI-2 format)
 
         // Data from device to host via XLink
-        xoutRGB->setStreamName("rgb");
+        xoutColor->setStreamName("color");
     }
 
     // Spatial Detection Network
     // If use detections
-    if(use_list.use_rgb_detections){
-
-        colorCam->setInterleaved(false);
+    if(use_list.use_color_detections){
 
         std::string nnBlobPath = "default";
         if (ros::param::has("/nnBlobPath")) {
             ros::param::get("/nnBlobPath", nnBlobPath);
         }
 
+        int NN_input_width = 300;
+        if (ros::param::has("/NN_input_width")) {
+            ros::param::get("/NN_input_width", NN_input_width);
+        }
+        int NN_input_high = 300;
+        if (ros::param::has("/NN_input_high")) {
+            ros::param::get("/NN_input_high", NN_input_high);
+        }
+        colorCam->setPreviewSize(NN_input_width, NN_input_high);
+
         // XLinkOut nodes
-        nnOut = pipeline_.create<dai::node::XLinkOut>();
-        nnOut->setStreamName("detections");
+        nnColorOutDetections = pipeline_.create<dai::node::XLinkOut>();
+        nnColorOutDetections->setStreamName("detections_color");
 
         xoutBoundingBoxDepthMapping = pipeline_.create<dai::node::XLinkOut>();
         xoutBoundingBoxDepthMapping->setStreamName("boundingBoxDepthMapping");
 
         // MobileNetSpatialDetectionNetwork node
-        spatialDetectionNetwork = pipeline_.create<dai::node::MobileNetSpatialDetectionNetwork>();
-        spatialDetectionNetwork->setBlobPath(nnBlobPath);
-        spatialDetectionNetwork->setConfidenceThreshold(0.5f); 
-        spatialDetectionNetwork->input.setBlocking(false); 
-        spatialDetectionNetwork->setBoundingBoxScaleFactor(0.5f); 
-        spatialDetectionNetwork->setDepthLowerThreshold(100); 
-        spatialDetectionNetwork->setDepthUpperThreshold(5000); 
+        mobilenetSpatialDetectionNetwork_color = pipeline_.create<dai::node::MobileNetSpatialDetectionNetwork>();
+        mobilenetSpatialDetectionNetwork_color->setBlobPath(nnBlobPath);
+        mobilenetSpatialDetectionNetwork_color->setConfidenceThreshold(0.5f); 
+        mobilenetSpatialDetectionNetwork_color->input.setBlocking(false); 
+        mobilenetSpatialDetectionNetwork_color->setBoundingBoxScaleFactor(0.5f); 
+        mobilenetSpatialDetectionNetwork_color->setDepthLowerThreshold(100); 
+        mobilenetSpatialDetectionNetwork_color->setDepthUpperThreshold(5000); 
 
-        // Link rgb camera with neural network
-        if(use_list.use_rgb){
-            colorCam->preview.link(spatialDetectionNetwork->input);
-            spatialDetectionNetwork->passthrough.link(xoutRGB->input);
-        }
+        // Link color camera with neural network
+        colorCam->preview.link(mobilenetSpatialDetectionNetwork_color->input);
+        mobilenetSpatialDetectionNetwork_color->passthrough.link(xoutColor->input);
 
-        spatialDetectionNetwork->out.link(nnOut->input);
-        spatialDetectionNetwork->boundingBoxMapping.link(xoutBoundingBoxDepthMapping->input);
+        mobilenetSpatialDetectionNetwork_color->out.link(nnColorOutDetections->input);
+        mobilenetSpatialDetectionNetwork_color->boundingBoxMapping.link(xoutBoundingBoxDepthMapping->input);
 
         // Link depth from the StereoDepth node
-        if(use_list.use_depth){
-             stereo->depth.link(spatialDetectionNetwork->inputDepth);
-             spatialDetectionNetwork->passthroughDepth.link(xoutDepth->input);
-        }
-        
+        stereo->depth.link(mobilenetSpatialDetectionNetwork_color->inputDepth);
+        mobilenetSpatialDetectionNetwork_color->passthroughDepth.link(xoutDepth->input);
+
+
     }
 
     if(use_list.use_stereo_detections){
@@ -303,14 +340,24 @@ void OakDPipeline::start(OakUseList& use_list,
         mobilenetDetectionNetwork_left->setNumInferenceThreads(2);
         mobilenetDetectionNetwork_left->input.setBlocking(false);
 
+        int NN_input_width = 300;
+        if (ros::param::has("/NN_input_width")) {
+            ros::param::get("/NN_input_width", NN_input_width);
+        }
+        int NN_input_high = 300;
+        if (ros::param::has("/NN_input_high")) {
+            ros::param::get("/NN_input_high", NN_input_high);
+        }
+        colorCam->setPreviewSize(NN_input_width, NN_input_high);
+
         // ImageManip for the right camera image
         imageManip_right = pipeline_.create<dai::node::ImageManip>();
-        imageManip_right->initialConfig.setResize(300, 300);
+        imageManip_right->initialConfig.setResize(NN_input_width, NN_input_high);
         imageManip_right->initialConfig.setFrameType(dai::RawImgFrame::Type::BGR888p); // The NN model expects BGR input. By default ImageManip output type would be same as input (gray in this case)
 
         // ImageManip for the left camera image
         imageManip_left = pipeline_.create<dai::node::ImageManip>();
-        imageManip_left->initialConfig.setResize(300, 300);
+        imageManip_left->initialConfig.setResize(NN_input_width, NN_input_high);
         imageManip_left->initialConfig.setFrameType(dai::RawImgFrame::Type::BGR888p); // The NN model expects BGR input. By default ImageManip output type would be same as input (gray in this case)
 
         // Set stream names for connection with PC
@@ -340,6 +387,7 @@ void OakDPipeline::start(OakUseList& use_list,
 
     }
 
+
     // CONNECT TO DEVICE
     dev_ = std::make_unique<dai::Device>(pipeline_);
     // dev_->startPipeline(); // DEPRECATED
@@ -363,19 +411,19 @@ void OakDPipeline::start(OakUseList& use_list,
         streams_queue.push_back(dev_->getOutputQueue("rectified_right", queueSize, false));
         queue_index.inx_rectified_right = counter; counter++;
     }
-    if(use_list.use_rgb){
-        streams_queue.push_back(dev_->getOutputQueue("rgb", queueSize, true));
-        queue_index.inx_rgb = counter; counter++;
-    }
-    if(use_list.use_rgb_detections){
-        streams_queue.push_back(dev_->getOutputQueue("detections", queueSize, false));
-        queue_index.inx_rgb_detections = counter; counter++; 
-        streams_queue.push_back(dev_->getOutputQueue("boundingBoxDepthMapping", queueSize, false));
-        queue_index.inx_bbDepthMapping = counter; counter++; 
+    if(use_list.use_color){
+        streams_queue.push_back(dev_->getOutputQueue("color", queueSize, false));
+        queue_index.inx_color = counter; counter++;
     }
     if(use_list.use_imu){
-        streams_queue.push_back(dev_->getOutputQueue("imu", queueSize, true));
+        streams_queue.push_back(dev_->getOutputQueue("imu", queueSize, false));
         queue_index.inx_imu = counter; counter++;
+    }
+    if(use_list.use_color_detections){
+        streams_queue.push_back(dev_->getOutputQueue("detections_color", queueSize, false));
+        queue_index.inx_detections_color = counter; counter++; 
+        streams_queue.push_back(dev_->getOutputQueue("boundingBoxDepthMapping", queueSize, false));
+        queue_index.inx_bbDepthMapping = counter; counter++;
     }
     if(use_list.use_stereo_detections){
         streams_queue.push_back(dev_->getOutputQueue("detections_right", queueSize, false));
@@ -386,10 +434,6 @@ void OakDPipeline::start(OakUseList& use_list,
         queue_index.inx_imgManip_right = counter; counter++; 
         streams_queue.push_back(dev_->getOutputQueue("manip_left", queueSize, false));
         queue_index.inx_imgManip_left = counter; counter++;
-        streams_queue.push_back(dev_->getOutputQueue("rectified_left", queueSize, false));
-        queue_index.inx_rectified_left = counter; counter++;
-        streams_queue.push_back(dev_->getOutputQueue("rectified_right", queueSize, false));
-        queue_index.inx_rectified_right = counter; counter++;
     }
 
     std::cout << "Pipeline initialized correctly" << std::endl;

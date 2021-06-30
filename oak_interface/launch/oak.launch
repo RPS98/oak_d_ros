@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+
     <!-- <args for urdf/> -->
     <arg name="camera_model"         default="BW1098OAK" /> <!-- 'zed' or 'zedm' -->
     <arg name="camera_name"          default="oak" />
@@ -28,25 +29,31 @@
         <arg name="cam_yaw"         value="$(arg  cam_yaw)"     />
     </include>
 
-
-    <!-- Cameras used -->
+    <!-- Cameras -->
     <param name="publish_mono"      type="bool" value="false" />
     <param name="publish_depth"     type="bool" value="false" />
     <param name="publish_rectified" type="bool" value="false" />
-    <param name="publish_rgb"       type="bool" value="false" />
+    <param name="publish_color"     type="bool" value="true" />
 
     <!-- Cameras parameters -->
-    <param name="mono_camera_resolution" type="int"    value="720"  /> <!-- 720, 800, 400 -->
+    <param name="mono_camera_resolution" type="int"    value="800"  /> <!-- 720, 800, 400 -->
     <param name="mono_camera_fps"        type="double" value="60.0" /> <!-- Max 120-->
 
-    <param name="rgb_camera_resolution" type="int"    value="1080"  /> <!-- 1080, 3840 (4K), 2826 (12MP) -->
-    <param name="rgb_camera_fps"        type="double" value="60.0" />  <!-- Max 60-->
+    <param name="color_camera_resolution" type="int"    value="1080"  /> <!-- 1080, 3840 (4K), 2826 (12MP) -->
+    <param name="color_camera_fps"        type="double" value="60.0" />  <!-- Max 60-->
+    <param name="use_BGR"                 type="bool"   value="true" /> <!-- Default: RGB -->
+    <param name="color_interleaved"       type="bool"   value="false" /> <!-- False when use Neural Network -->
 
     <!-- IMU -->
-    <param name="publish_imu"       type="bool" value="true" />
+    <param name="publish_imu"       type="bool" value="false" />
+    <group ns="imu_covariance">
+        <rosparam file="$(find oak_interface)/params/imu/imu.yaml" />
+    </group>
 
     <!-- Neural Network -->
-    <param name="publish_rgb_detections" type="bool" value="true" />
+    <param name="NN_input_width"     type="int" value="300" />
+    <param name="NN_input_high"      type="int" value="300" />
+    <param name="publish_color_detections"  type="bool" value="true" />
     <param name="publish_stereo_detections" type="bool" value="false" /> 
     <param name="nnBlobPath"         type="string" value="$(find oak_interface)/resources/mobilenet-ssd_openvino_2021.2_6shave.blob" />
 
@@ -68,31 +75,32 @@
         <remap from="depth/image"  to="/oak/depth/image"/>
         <remap from="depth/info"   to="/oak/depth/info"/>
 
-        <remap from="rgb/image"  to="/oak/rgb/image"/>
-        <remap from="rgb/info"   to="/oak/rgb/info"/>
+        <remap from="color/image"  to="/oak/color/image"/>
+        <remap from="color/info"   to="/oak/color/info"/>
 
-        <remap from="/detections_images"    to="/oak/detections/image"/>
-        <remap from="/detections_depth"     to="/oak/detections/depth"/>
-        <remap from="/detections_spatial"     to="/oak/detections/spatial"/>
+        <remap from="/detections/bounding_boxes"  to="/oak/detections/bounding_boxes"/>
+        <remap from="/detections/image"   to="/oak/detections/image"/>
+
+        <remap from="/detections_image_right"    to="/oak/detections/image/right"/>
+        <remap from="/detections_image_left"    to="/oak/detections/image/left"/>
 
         <remap from="Imu"        to="/oak/imu"/>
         
     </node>
 
+    <!-- Show all images -->
+    
     <node name = "rqt_dashboard" pkg = "rqt_gui" type = "rqt_gui" respawn = "false" output = "screen" args = "--perspective-file $(find oak_interface)/rqt_config/oak.perspective" /> 
+    
 
-    <node pkg="rqt_image_view" type="rqt_image_view" name="image_view_detections" args="/oak/detections/image"/>
+    <!-- Show color detections images -->.
+    <!-- <node pkg="rqt_image_view" type="rqt_image_view" name="image_view_detections" args="/oak/detections/image"/> -->
 
+    <!-- Show depth detections images -->
+    <!--
+    <node pkg="rqt_image_view" type="rqt_image_view" name="image_view_left_dets" args="/oak/detections/image/left"/>
+    <node pkg="rqt_image_view" type="rqt_image_view" name="image_view_right_dets" args="/oak/detections/image/right"/>
+     -->
 
-    <!-- <node pkg="rqt_image_view" type="rqt_image_view" name="image_view_left"/>  -->
-
- <!--   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find oak_interface)/rviz/oak.rviz" /> -->
-
- <!-- 
-    <node pkg="rqt_image_view" type="rqt_image_view" name="image_view_left" args="/oak_interface_process/left/image"/>
-    <node pkg="rqt_image_view" type="rqt_image_view" name="image_view_right" args="/oak_interface_process/right/image"/>
-    <node pkg="rqt_image_view" type="rqt_image_view" name="image_view_left_rectified" args="/oak_interface_process/left/image_rectified"/>
-    <node pkg="rqt_image_view" type="rqt_image_view" name="image_view_right_rectified" args="/oak_interface_process/right/image_rectified"/>
-    <node pkg="rqt_image_view" type="rqt_image_view" name="image_view_depth" args="/oak_interface_process/stereo/depth"/>   -->   
 
 </launch>

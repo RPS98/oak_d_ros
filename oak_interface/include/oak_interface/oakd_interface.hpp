@@ -7,10 +7,10 @@
 #include "oakd_task_mono.hpp"
 #include "oakd_task_depth.hpp"
 #include "oakd_task_rectified.hpp"
-#include "oakd_task_rgb.hpp"
-#include "oakd_task_rgb_detections.hpp"
+#include "oakd_task_color.hpp"
 #include "oakd_task_imu.hpp"
-#include "oakd_task_stereo_detections.hpp"
+#include "oakd_task_color_neural_inference.hpp"
+#include "oakd_task_stereo_neural_inference.hpp"
 
 class OakDInterface : public OakDProcess
 {

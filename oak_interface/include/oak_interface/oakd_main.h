@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <std_msgs/String.h>
+#include <math.h>
 
 #include <camera_info_manager/camera_info_manager.h>
 #include "sensor_msgs/Image.h"

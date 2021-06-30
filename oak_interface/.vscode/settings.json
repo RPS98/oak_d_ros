@@ -1,8 +1,14 @@
 {
+    "python.autoComplete.extraPaths": [
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ],
+    "cmake.configureOnOpen": true,
     "files.associations": {
-        "array": "cpp",
-        "tuple": "cpp",
-        "utility": "cpp",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
@@ -14,6 +20,7 @@
         "ctime": "cpp",
         "cwchar": "cpp",
         "cwctype": "cpp",
+        "array": "cpp",
         "atomic": "cpp",
         "strstream": "cpp",
         "*.tcc": "cpp",
@@ -48,7 +55,9 @@
         "thread": "cpp",
         "cfenv": "cpp",
         "cinttypes": "cpp",
+        "tuple": "cpp",
         "type_traits": "cpp",
+        "utility": "cpp",
         "typeinfo": "cpp",
         "algorithm": "cpp",
         "iterator": "cpp",
@@ -59,18 +68,6 @@
         "random": "cpp",
         "set": "cpp",
         "string": "cpp",
-        "string_view": "cpp",
-        "hash_map": "cpp",
-        "hash_set": "cpp",
-        "typeindex": "cpp",
-        "*.ipp": "cpp"
-    },
-    "python.autoComplete.extraPaths": [
-        "/home/rafa/practicas_ws/devel/lib/python2.7/dist-packages",
-        "/opt/ros/melodic/lib/python2.7/dist-packages"
-    ],
-    "python.analysis.extraPaths": [
-        "/home/rafa/practicas_ws/devel/lib/python2.7/dist-packages",
-        "/opt/ros/melodic/lib/python2.7/dist-packages"
-    ]
+        "string_view": "cpp"
+    }
 }
