@@ -29,10 +29,10 @@
         <arg name="cam_yaw"         value="$(arg  cam_yaw)"     />
     </include>
 
-    <!-- Cameras -->
-    <param name="publish_mono"      type="bool" value="false" />
-    <param name="publish_depth"     type="bool" value="false" />
-    <param name="publish_rectified" type="bool" value="false" />
+    <!-- Cameras -->true
+    <param name="publish_mono"      type="bool" value="true" />
+    <param name="publish_depth"     type="bool" value="true" />
+    <param name="publish_rectified" type="bool" value="true" />
     <param name="publish_color"     type="bool" value="true" />
 
     <!-- Cameras parameters -->
@@ -43,9 +43,10 @@
     <param name="color_camera_fps"        type="double" value="60.0" />  <!-- Max 60-->
     <param name="use_BGR"                 type="bool"   value="true" /> <!-- Default: RGB -->
     <param name="color_interleaved"       type="bool"   value="false" /> <!-- False when use Neural Network -->
+    <param name="image_orientation"       type="int"    value="5" /> <!-- Possible values: 1-AUTO, 2-NORMAL, 3-HORIZONTAL_MIRROR, 4-VERTICAL_FLIP, 5-ROTATE_180_DEG -->
 
     <!-- IMU -->
-    <param name="publish_imu"       type="bool" value="false" />
+    <param name="publish_imu"       type="bool" value="true" />
     <group ns="imu_covariance">
         <rosparam file="$(find oak_interface)/params/imu/imu.yaml" />
     </group>
@@ -53,7 +54,7 @@
     <!-- Neural Network -->
     <param name="NN_input_width"     type="int" value="300" />
     <param name="NN_input_high"      type="int" value="300" />
-    <param name="publish_color_detections"  type="bool" value="true" />
+    <param name="publish_color_detections"  type="bool" value="false" />
     <param name="publish_stereo_detections" type="bool" value="false" /> 
     <param name="nnBlobPath"         type="string" value="$(find oak_interface)/resources/mobilenet-ssd_openvino_2021.2_6shave.blob" />
 
