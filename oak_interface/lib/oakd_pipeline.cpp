@@ -102,18 +102,25 @@ void OakDPipeline::start(OakUseList& use_list,
             if(!use_list.use_mono){
                 stereo->setInputResolution(1280, 800);
             }
-
-            //stereo->loadCalibrationFile(const std::string &path);
-            //stereo->loadCalibrationData(const std::vector<std::uint8_t> &data);
+            
+            std::string path;
+            stereo->loadCalibrationFile(path);
+            // std::vector<std::uint8_t> data;
+            // stereo->loadCalibrationData(data);
             //stereo->setEmptyCalibration();
-            //stereo->setMedianFilter(Properties::MedianFilter median);
-            //stereo->setDepthAlign(Properties::DepthAlign align);
-            stereo->setConfidenceThreshold(255);
-            //stereo->setLeftRightCheck(bool enable);
+            // stereo->setMedianFilter(Properties::MedianFilter median);
+            stereo->setMedianFilter(dai::StereoDepthProperties::MedianFilter::KERNEL_5x5);
+            // stereo->setLeftRightCheck(true);
+            // stereo->setDepthAlign(dai::StereoDepthProperties::DepthAlign::RECTIFIED_LEFT);
+            // stereo->setConfidenceThreshold(200);
+
+            // stereo->setLeftRightCheck(true);
+            // stereo->setDepthAlign(dai::CameraBoardSocket::RGB);
             //stereo->setSubpixel(bool enable);
-            //stereo->setExtendedDisparity(bool enable);
+            // stereo->setExtendedDisparity(bool enable);
+            // stereo->setExtendedDisparity(true);
             stereo->setRectifyEdgeFillColor(0);
-            //stereo->setRectifyMirrorFrame(bool enable);
+            // stereo->setRectifyMirrorFrame(true);
             //stereo->setOutputRectified(use_list.use_rectified); // DEPRECATED
             //stereo->setOutputDepth(use_list.use_depth); // DEPRECATED
 
@@ -126,9 +133,9 @@ void OakDPipeline::start(OakUseList& use_list,
                 stereo->depth.link(xoutDepth->input); // RAW16 encoded (0..65535) depth data in millimeters
             }
             
-            //stereo->disparity.link(xoutDepth->input);   // RAW8 / RAW16 encoded disparity data
-            //stereo->syncedLeft.link(xoutLeft->input);  // Passthrough ImgFrame message from ‘left’ Input
-            //stereo->syncedRight.link(xoutRight->input); // Passthrough ImgFrame message from right Input
+            // stereo->disparity.link(xoutDepth->input);   // RAW8 / RAW16 encoded disparity data
+            // stereo->syncedLeft.link(xoutLeft->input);  // Passthrough ImgFrame message from ‘left’ Input
+            // stereo->syncedRight.link(xoutRight->input); // Passthrough ImgFrame message from right Input
 
             // Data from device to host via XLink
             xoutDepth->setStreamName("depth");

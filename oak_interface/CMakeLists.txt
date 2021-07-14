@@ -281,6 +281,7 @@ macro(dai_add_node node_name node_src)
       ${catkin_LIBRARIES}
       depthai::core
       ${PROJECT_NAME}
+      
       opencv_imgproc
       opencv_highgui
     )

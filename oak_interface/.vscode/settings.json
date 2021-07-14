@@ -63,7 +63,12 @@
         "hash_map": "cpp",
         "hash_set": "cpp",
         "typeindex": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "forward_list": "cpp",
+        "shared_mutex": "cpp",
+        "valarray": "cpp",
+        "variant": "cpp",
+        "bit": "cpp"
     },
     "python.autoComplete.extraPaths": [
         "/home/rafa/practicas_ws/devel/lib/python2.7/dist-packages",
@@ -72,5 +77,6 @@
     "python.analysis.extraPaths": [
         "/home/rafa/practicas_ws/devel/lib/python2.7/dist-packages",
         "/opt/ros/melodic/lib/python2.7/dist-packages"
-    ]
+    ],
+    "cmake.configureOnOpen": true
 }
