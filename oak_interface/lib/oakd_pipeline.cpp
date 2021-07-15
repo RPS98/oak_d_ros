@@ -91,27 +91,6 @@ void OakDPipeline::start(OakUseList& use_list,
 
         monoLeft->setFps(mono_camera_fps);
         monoRight->setFps(mono_camera_fps);
-
-        if (ros::param::has("/image_orientation")) {
-            int image_orientation;
-            ros::param::get("/image_orientation", image_orientation);
-            if(image_orientation == 1){
-                monoLeft->setImageOrientation(dai::CameraImageOrientation::AUTO);
-                monoRight->setImageOrientation(dai::CameraImageOrientation::AUTO);
-            } else if(image_orientation == 2){
-                monoLeft->setImageOrientation(dai::CameraImageOrientation::NORMAL);
-                monoRight->setImageOrientation(dai::CameraImageOrientation::NORMAL);
-            } else if(image_orientation == 3){
-                monoLeft->setImageOrientation(dai::CameraImageOrientation::HORIZONTAL_MIRROR);
-                monoRight->setImageOrientation(dai::CameraImageOrientation::HORIZONTAL_MIRROR);
-            } else if(image_orientation == 4){
-                monoLeft->setImageOrientation(dai::CameraImageOrientation::VERTICAL_FLIP);
-                monoRight->setImageOrientation(dai::CameraImageOrientation::VERTICAL_FLIP);
-            } else if(image_orientation == 5){
-                monoLeft->setImageOrientation(dai::CameraImageOrientation::ROTATE_180_DEG);
-                monoRight->setImageOrientation(dai::CameraImageOrientation::ROTATE_180_DEG);
-            }
-        }
         // monoRight->setImageOrientation(CameraImageOrientationimageOrientation);
 
         // Link plugins CAM -> STEREO -> XLINK
@@ -270,25 +249,8 @@ void OakDPipeline::start(OakUseList& use_list,
         colorCam->setInterleaved(color_interleaved);
         
         colorCam->setFps(color_camera_fps);
-
-        if (ros::param::has("/image_orientation")) {
-            int image_orientation;
-            ros::param::get("/image_orientation", image_orientation);
-            if(image_orientation == 1){
-                colorCam->setImageOrientation(dai::CameraImageOrientation::AUTO);
-            } else if(image_orientation == 2){
-                colorCam->setImageOrientation(dai::CameraImageOrientation::NORMAL);
-            } else if(image_orientation == 3){
-                colorCam->setImageOrientation(dai::CameraImageOrientation::HORIZONTAL_MIRROR);
-            } else if(image_orientation == 4){
-                colorCam->setImageOrientation(dai::CameraImageOrientation::VERTICAL_FLIP);
-            } else if(image_orientation == 5){
-                colorCam->setImageOrientation(dai::CameraImageOrientation::ROTATE_180_DEG);
-            }
-        }
-
         // colorCam->setCamId(int64_t id);
-        // colorCam->setImageOrientation(dai::CameraImageOrientation::HORIZONTAL_MIRROR);
+        // colorCam->setImageOrientation(CameraImageOrientationimageOrientation);
         // colorCam->setPreviewSize(int width, int height);
         // colorCam->setVideoSize(int width, int height);
         // colorCam->setStillSize(int width, int height);

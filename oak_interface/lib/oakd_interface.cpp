@@ -81,12 +81,9 @@ void OakDInterface::read_param(OakPublishList& publish_list){
     if (ros::param::has("/publish_imu"))
         ros::param::get("/publish_imu", publish_list.publish_imu);
 
-    if (ros::param::has("/publish_color_detections")){
+    if (ros::param::has("/publish_color_detections"))
         ros::param::get("/publish_color_detections", publish_list.publish_color_detections);
-        if(publish_list.publish_color_detections){
-            publish_list.publish_color = false;
-        }
-    }
+
     if (ros::param::has("/publish_stereo_detections"))
         ros::param::get("/publish_stereo_detections", publish_list.publish_stereo_detections);
 
@@ -124,8 +121,9 @@ void OakDInterface::create_use_list(OakUseList& use_list, OakPublishList& publis
     if(publish_list.publish_stereo_detections){
         use_list.use_mono = true;
         use_list.use_depth = true;     
-        //use_list.use_color = true;
+        use_list.use_color = true;
         use_list.use_stereo_detections = true; 
+        use_list.use_rectified = true;
     }
     
 }
