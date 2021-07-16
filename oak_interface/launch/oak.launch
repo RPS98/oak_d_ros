@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <include file="$(find mocap_optitrack)/launch/mocap.launch"/>
-    <include file="$(find realsense2_camera)/launch/rs_t265.launch"/>
-    
+    <!-- <include file="$(find mocap_optitrack)/launch/mocap.launch"/> -->
+    <!-- <include file="$(find realsense2_camera)/launch/rs_t265.launch"/> -->
 
     <!-- <args for urdf/> -->
     <arg name="camera_model"         default="BW1098OAK" /> <!-- 'zed' or 'zedm' -->
@@ -33,22 +32,23 @@
     </include>
 
     <!-- Cameras -->
-    <param name="publish_mono"      type="bool" value="false" />
-    <param name="publish_depth"     type="bool" value="false" />
-    <param name="publish_rectified" type="bool" value="false" />
-    <param name="publish_color"     type="bool" value="false" />
+    <param name="publish_mono"      type="bool" value="true" />
+    <param name="publish_depth"     type="bool" value="true" />
+    <param name="publish_rectified" type="bool" value="true" />
+    <param name="publish_color"     type="bool" value="true" />
 
     <!-- Cameras parameters -->
-    <param name="mono_camera_resolution" type="int"    value="800"  /> <!-- 720, 800, 400 (IMPORTANT: USE 800 FOR STEREO NEURAL INFERENCE)-->
+    <param name="mono_camera_resolution" type="int"    value="800"  /> <!-- 720, 800, 400 -->
     <param name="mono_camera_fps"        type="double" value="60.0" /> <!-- Max 120-->
 
     <param name="color_camera_resolution" type="int"    value="1080"  /> <!-- 1080, 3840 (4K), 2826 (12MP) -->
     <param name="color_camera_fps"        type="double" value="60.0" />  <!-- Max 60-->
     <param name="use_BGR"                 type="bool"   value="true" /> <!-- Default: RGB -->
     <param name="color_interleaved"       type="bool"   value="false" /> <!-- False when use Neural Network -->
+    <param name="image_orientation"       type="int"    value="5" /> <!-- Possible values: 1-AUTO, 2-NORMAL, 3-HORIZONTAL_MIRROR, 4-VERTICAL_FLIP, 5-ROTATE_180_DEG -->
 
     <!-- IMU -->
-    <param name="publish_imu"       type="bool" value="false" />
+    <param name="publish_imu"       type="bool" value="true" />
     <group ns="imu_covariance">
         <rosparam file="$(find oak_interface)/params/imu/imu.yaml" />
     </group>
@@ -81,8 +81,8 @@
         <remap from="color/image"  to="/oak/color/image"/>
         <remap from="color/info"   to="/oak/color/info"/>
 
-        <remap from="/detections_images"  to="/oak/detections/image"/>
-        <remap from="/detections_depth"   to="/oak/detections/depth"/>
+        <remap from="/detections/bounding_boxes"  to="/oak/detections/bounding_boxes"/>
+        <remap from="/detections/image"   to="/oak/detections/image"/>
 
         <remap from="/detections_image_right"    to="/oak/detections/image/right"/>
         <remap from="/detections_image_left"    to="/oak/detections/image/left"/>
@@ -92,7 +92,7 @@
     </node>
 
     <!-- Show all images -->
-    
+    <node name = "rqt_dashboard" pkg = "rqt_gui" type = "rqt_gui" respawn = "false" output = "screen" args = "--perspective-file $(find oak_interface)/rqt_config/oak.perspective" /> 
     
 
     <!-- Show color detections images -->.
@@ -105,12 +105,12 @@
      -->
 
     <!-- Show Rviz -->
+    <!--
 	<arg name="show_rviz" default="true"/> 
     <group if="$(arg show_rviz)">
     <arg name="rviz_file" default="$(find oak_interface)/rviz/oak_rosbags.rviz" />
     <node pkg="rviz" type="rviz" name="$(anon rviz)" output="screen"
           args="-d $(arg rviz_file)" />
     </group>
-
-
+     -->
 </launch>
