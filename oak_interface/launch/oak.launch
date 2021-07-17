@@ -34,8 +34,8 @@
     <!-- Cameras -->
     <param name="publish_mono"      type="bool" value="true" />
     <param name="publish_depth"     type="bool" value="true" />
-    <param name="publish_rectified" type="bool" value="true" />
-    <param name="publish_color"     type="bool" value="true" />
+    <param name="publish_rectified" type="bool" value="false" />
+    <param name="publish_color"     type="bool" value="false" />
 
     <!-- Cameras parameters -->
     <param name="mono_camera_resolution" type="int"    value="800"  /> <!-- 720, 800, 400 -->
