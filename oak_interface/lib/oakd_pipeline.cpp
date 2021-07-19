@@ -109,17 +109,17 @@ void OakDPipeline::start(OakUseList& use_list,
             // stereo->loadCalibrationData(data);
             //stereo->setEmptyCalibration();
             // stereo->setMedianFilter(Properties::MedianFilter median);
-            stereo->setMedianFilter(dai::StereoDepthProperties::MedianFilter::KERNEL_5x5);
+            stereo->setMedianFilter(dai::StereoDepthProperties::MedianFilter::KERNEL_7x7);
             // stereo->setLeftRightCheck(true);
             // stereo->setDepthAlign(dai::StereoDepthProperties::DepthAlign::RECTIFIED_LEFT);
-            // stereo->setConfidenceThreshold(200);
+            stereo->setConfidenceThreshold(100);
 
             // stereo->setLeftRightCheck(true);
             // stereo->setDepthAlign(dai::CameraBoardSocket::RGB);
             //stereo->setSubpixel(bool enable);
             // stereo->setExtendedDisparity(bool enable);
             // stereo->setExtendedDisparity(true);
-            stereo->setRectifyEdgeFillColor(0);
+            // stereo->setRectifyEdgeFillColor(0);
             // stereo->setRectifyMirrorFrame(true);
             //stereo->setOutputRectified(use_list.use_rectified); // DEPRECATED
             //stereo->setOutputDepth(use_list.use_depth); // DEPRECATED
