@@ -91,6 +91,27 @@ void OakDPipeline::start(OakUseList& use_list,
 
         monoLeft->setFps(mono_camera_fps);
         monoRight->setFps(mono_camera_fps);
+
+        if (ros::param::has("/image_orientation")) {
+            int image_orientation;
+            ros::param::get("/image_orientation", image_orientation);
+            if(image_orientation == 1){
+                monoLeft->setImageOrientation(dai::CameraImageOrientation::AUTO);
+                monoRight->setImageOrientation(dai::CameraImageOrientation::AUTO);
+            } else if(image_orientation == 2){
+                monoLeft->setImageOrientation(dai::CameraImageOrientation::NORMAL);
+                monoRight->setImageOrientation(dai::CameraImageOrientation::NORMAL);
+            } else if(image_orientation == 3){
+                monoLeft->setImageOrientation(dai::CameraImageOrientation::HORIZONTAL_MIRROR);
+                monoRight->setImageOrientation(dai::CameraImageOrientation::HORIZONTAL_MIRROR);
+            } else if(image_orientation == 4){
+                monoLeft->setImageOrientation(dai::CameraImageOrientation::VERTICAL_FLIP);
+                monoRight->setImageOrientation(dai::CameraImageOrientation::VERTICAL_FLIP);
+            } else if(image_orientation == 5){
+                monoLeft->setImageOrientation(dai::CameraImageOrientation::ROTATE_180_DEG);
+                monoRight->setImageOrientation(dai::CameraImageOrientation::ROTATE_180_DEG);
+            }
+        }
         // monoRight->setImageOrientation(CameraImageOrientationimageOrientation);
 
         // Link plugins CAM -> STEREO -> XLINK
@@ -124,16 +145,17 @@ void OakDPipeline::start(OakUseList& use_list,
                 }
             }
 
-            //stereo->loadCalibrationFile(const std::string &path);
+            std::string path;
+            stereo->loadCalibrationFile(path);
             //stereo->loadCalibrationData(const std::vector<std::uint8_t> &data);
             //stereo->setEmptyCalibration();
-            //stereo->setMedianFilter(Properties::MedianFilter median);
+            stereo->setMedianFilter(dai::StereoDepthProperties::MedianFilter::KERNEL_7x7);
             //stereo->setDepthAlign(Properties::DepthAlign align);
-            stereo->setConfidenceThreshold(255);
+            stereo->setConfidenceThreshold(100);
             //stereo->setLeftRightCheck(bool enable);
             //stereo->setSubpixel(bool enable);
             //stereo->setExtendedDisparity(bool enable);
-            stereo->setRectifyEdgeFillColor(0);
+            //stereo->setRectifyEdgeFillColor(0);
             //stereo->setRectifyMirrorFrame(bool enable);
             //stereo->setOutputRectified(use_list.use_rectified); // DEPRECATED
             //stereo->setOutputDepth(use_list.use_depth); // DEPRECATED
@@ -235,7 +257,6 @@ void OakDPipeline::start(OakUseList& use_list,
             colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_1080_P);
             colorCam->setPreviewSize(1920, 1080);
         }
-        //colorCam->setInterleaved(false); // Function getRosMsg do not support
 
         if(use_BGR){
             colorCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::BGR);
@@ -250,8 +271,25 @@ void OakDPipeline::start(OakUseList& use_list,
         colorCam->setInterleaved(color_interleaved);
         
         colorCam->setFps(color_camera_fps);
+
+        if (ros::param::has("/image_orientation")) {
+            int image_orientation;
+            ros::param::get("/image_orientation", image_orientation);
+            if(image_orientation == 1){
+                colorCam->setImageOrientation(dai::CameraImageOrientation::AUTO);
+            } else if(image_orientation == 2){
+                colorCam->setImageOrientation(dai::CameraImageOrientation::NORMAL);
+            } else if(image_orientation == 3){
+                colorCam->setImageOrientation(dai::CameraImageOrientation::HORIZONTAL_MIRROR);
+            } else if(image_orientation == 4){
+                colorCam->setImageOrientation(dai::CameraImageOrientation::VERTICAL_FLIP);
+            } else if(image_orientation == 5){
+                colorCam->setImageOrientation(dai::CameraImageOrientation::ROTATE_180_DEG);
+            }
+        }
+
         // colorCam->setCamId(int64_t id);
-        // colorCam->setImageOrientation(CameraImageOrientationimageOrientation);
+        // colorCam->setImageOrientation(dai::CameraImageOrientation::HORIZONTAL_MIRROR);
         // colorCam->setPreviewSize(int width, int height);
         // colorCam->setVideoSize(int width, int height);
         // colorCam->setStillSize(int width, int height);
@@ -413,11 +451,11 @@ void OakDPipeline::start(OakUseList& use_list,
         queue_index.inx_rectified_right = counter; counter++;
     }
     if(use_list.use_color){
-        streams_queue.push_back(dev_->getOutputQueue("color", queueSize, true));
+        streams_queue.push_back(dev_->getOutputQueue("color", queueSize, false));
         queue_index.inx_color = counter; counter++;
     }
     if(use_list.use_imu){
-        streams_queue.push_back(dev_->getOutputQueue("imu", queueSize, true));
+        streams_queue.push_back(dev_->getOutputQueue("imu", queueSize, false));
         queue_index.inx_imu = counter; counter++;
     }
     if(use_list.use_color_detections){

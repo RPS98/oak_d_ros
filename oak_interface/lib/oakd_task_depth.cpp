@@ -34,8 +34,11 @@ void OakDTaskDepth::run(std::vector<std::shared_ptr<dai::DataOutputQueue>>& stre
         depth_pub.publish(depth_image_msg);
 
         // Send info
-        depth_CameraInfo.header.seq = depth_frame->getSequenceNum();
-        depth_CameraInfo.header.stamp = ros::Time::now();
+        // depth_CameraInfo.header.seq = depth_frame->getSequenceNum();
+        depth_CameraInfo = depth_camInfoManager->getCameraInfo();
+        depth_CameraInfo.P[3] /= 100.0f;
+        depth_CameraInfo.header.stamp = header.stamp;
+        depth_CameraInfo.header.frame_id = "camera_link";
         depth_info_pub.publish(depth_CameraInfo);
     }
 }

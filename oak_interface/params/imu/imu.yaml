@@ -1,0 +1,18 @@
+orientation_covariance:
+  cols: 3
+  data: [ 0.1,0,0,
+          0,0.1,0,
+          0,0,0.1]
+  rows: 3
+angular_velocity_covariance:
+  cols: 3
+  data: [ 0.0072255522344464793,0,0,
+          0,0.0061319799724541104,0,
+          0,0,0.0081724950866878237]
+  rows: 3
+linear_acceleration_covariance:
+  cols: 3
+  data: [ 0.027129571855099233,0,0,
+          0,0.025032181819875311,0,
+          0,0,0.028286689365978803]
+  rows: 3

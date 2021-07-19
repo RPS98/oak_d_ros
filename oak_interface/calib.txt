@@ -1,0 +1,15 @@
+Intrinsics from getCameraIntrinsics function 1280 x 720  -> LEFT
+857.508  0  646.104  
+0  857.662  371.957  
+0  0  1  
+Intrinsics from getCameraIntrinsics function 1280 x 720  -> RIGHT
+863.723  0  639.244  
+0  864.499  360.628  
+0  0  1  
+
+
+Extrinsics from left->right test ->
+0.99984  0.0154745  0.00901662  -7.5229  
+-0.0155021  0.999875  0.00300556  -0.0800991  
+-0.00896899  -0.00314486  0.999955  -0.0232624  
+0  0  0  1  
