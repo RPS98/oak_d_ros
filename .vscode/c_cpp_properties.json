@@ -1,0 +1,31 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/miguel/vins_ws/devel/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/behaviors/quadrotor_motion_with_df_control/subpackages/DifferentialFlatnessController/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/deprecated/libraries/drone_process/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/behaviors/quadrotor_motion_with_df_control/subpackages/TrajectoryGenerator/subpackages/eigen_checks/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/libraries/mav_comm/mav_msgs/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/libraries/mav_comm/mav_planning_msgs/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/behaviors/quadrotor_motion_with_df_control/subpackages/TrajectoryGenerator/subpackages/mav_trajectory_generation/mav_trajectory_generation/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/behaviors/quadrotor_motion_with_df_control/subpackages/TrajectoryGenerator/subpackages/mav_trajectory_generation/mav_trajectory_generation_example/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/behaviors/quadrotor_motion_with_df_control/subpackages/TrajectoryGenerator/subpackages/mav_trajectory_generation/mav_trajectory_generation_ros/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/behaviors/quadrotor_motion_with_df_control/subpackages/TrajectoryGenerator/subpackages/mav_trajectory_generation/mav_visualization/include/**",
+        "/home/miguel/vins_ws/src/oak_d_ros/oak_interface/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/libraries/robot_process/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/libraries/ros_utils_lib/include/**",
+        "/home/miguel/workspace/ros/aerostack_catkin_ws/src/behaviors/quadrotor_motion_with_df_control/subpackages/TrajectoryGenerator/package/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS"
+    }
+  ],
+  "version": 4
+}

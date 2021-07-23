@@ -92,6 +92,7 @@
     </node>
 
     <!-- Show all images -->
+    <node pkg="tf" type="static_transform_publisher" name="tool_broadcaster" args="0.10 0 0  1.57 0 1.57 base_link camera_link 100" />
     
     
     
