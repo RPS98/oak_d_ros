@@ -46,6 +46,10 @@
 
     <!-- IMU -->
     <param name="publish_imu"       type="bool" value="true" />
+    <group ns="imu_covariance">
+        <rosparam file="$(find oak_interface)/params/imu/imu.yaml" />
+    </group>
+
 
     <!-- Neural Network -->
     <param name="NN_input_width"     type="int" value="300" />

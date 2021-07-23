@@ -49,7 +49,7 @@ void OakDInterface::ownStart(){
 void OakDInterface::ownRun(){
     
     header.stamp = ros::Time::now();
-    header.frame_id = "base_link";
+    header.frame_id = "camera_link";
     header.seq = seq;
     for(auto task:tasks_list_){
         task->run(streams_queue_, queue_index_, header);
